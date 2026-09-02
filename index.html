@@ -447,9 +447,10 @@
     .btn-green { background: #2ecc71; }
     .btn-yellow { background: #f1c40f; }
 
+    /* PANEL LAMPU DENGAN PETUNJUK TERMINAL JELAS */
     #lamp-panel {
       left: 745px; top: 275px;
-      width: 285px; height: 160px;
+      width: 285px; height: 180px;
       padding: 10px;
       background: #ecf0f1;
     }
@@ -459,9 +460,37 @@
       background: #555;
       margin: 0 auto 6px;
       border: 3px solid #333;
+      transition: 0.2s;
     }
     .lamp-green.lit { background: #00e676; box-shadow: 0 0 20px #00e676; }
     .lamp-yellow.lit { background: #ffea00; box-shadow: 0 0 20px #ffea00; }
+    
+    .lamp-term-container {
+      background: #dfe4ea;
+      border: 1px dashed #747d8c;
+      border-radius: 5px;
+      padding: 4px 6px;
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+    }
+    .lamp-term-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .lamp-term-badge {
+      font-size: 8px;
+      font-weight: 800;
+      padding: 1px 4px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
+    }
+    .badge-out { background: #2ed573; color: #1e272e; }
+    .badge-out-rev { background: #ffa502; color: #1e272e; }
+    .badge-netral { background: #1e90ff; color: #fff; }
 
     /* Modal Diagnostik */
     #diag-modal {
@@ -543,15 +572,10 @@
       <button class="btn" style="padding: 2px 6px; font-size:10px;" onclick="resetZoomPan()">Fit</button>
     </div>
 
-    <!-- Poin 1: Validasi Diagnostik Otomatis -->
+    <!-- Tombol Diagnostik & Live Trace -->
     <button class="btn btn-diag" onclick="openDiagnostics()">🔍 Periksa Rangkaian</button>
-    
-    <!-- Poin 3: Live Trace Aliran Tegangan -->
     <button class="btn btn-trace" id="btn-trace" onclick="toggleLiveTrace()">⚡ Live Trace Arus</button>
-
-    <!-- Poin Pilihan Alat Tambah Titik -->
     <button class="btn btn-mode-addpt" id="btn-addpt" onclick="toggleAddPointMode()">📍 Alat Tambah Titik</button>
-
     <button class="btn btn-delete-mode" id="btn-delete" onclick="toggleDeleteMode()">✂ Mode Hapus</button>
     <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
     <button class="btn" onclick="clearAllWires()">Reset</button>
@@ -730,35 +754,52 @@
         </div>
       </div>
 
-      <!-- LAMPU INDIKATOR OUTPUT -->
+      <!-- LAMPU INDIKATOR OUTPUT DENGAN LABEL JELAS -->
       <div class="component" id="lamp-panel">
-        <div style="font-weight:bold; font-size:11px; margin-bottom:10px; text-align:center; color:#2c3e50;">INDIKATOR OUTPUT (220V)</div>
+        <div style="font-weight:bold; font-size:11px; margin-bottom:6px; text-align:center; color:#2c3e50;">INDIKATOR OUTPUT (AC 220V)</div>
         <div style="display:flex; justify-content:space-around;">
+          
+          <!-- LAMPU FORWARD -->
           <div style="text-align:center;">
             <div class="pilot-lamp lamp-green" id="lamp-fwd"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-              <div class="terminal" data-id="LP_FWD_L"></div>
-              <div class="terminal" data-id="LP_FWD_N"></div>
+            <span style="font-size:10px; font-weight:bold; display:block; color:#27ae60;">LAMPU FWD</span>
+            
+            <div class="lamp-term-container">
+              <div class="lamp-term-col">
+                <span class="lamp-term-badge badge-out">OUT 100.00</span>
+                <div class="terminal" data-id="LP_FWD_L"></div>
+              </div>
+              <div class="lamp-term-col">
+                <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
+                <div class="terminal" data-id="LP_FWD_N"></div>
+              </div>
             </div>
-            <span style="font-size:10px; font-weight:bold; display:block; margin-top:3px;">LAMPU FWD</span>
           </div>
+
+          <!-- LAMPU REVERSE -->
           <div style="text-align:center;">
             <div class="pilot-lamp lamp-yellow" id="lamp-rev"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-              <div class="terminal" data-id="LP_REV_L"></div>
-              <div class="terminal" data-id="LP_REV_N"></div>
+            <span style="font-size:10px; font-weight:bold; display:block; color:#d4ac0d;">LAMPU REV</span>
+            
+            <div class="lamp-term-container">
+              <div class="lamp-term-col">
+                <span class="lamp-term-badge badge-out-rev">OUT 100.01</span>
+                <div class="terminal" data-id="LP_REV_L"></div>
+              </div>
+              <div class="lamp-term-col">
+                <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
+                <div class="terminal" data-id="LP_REV_N"></div>
+              </div>
             </div>
-            <span style="font-size:10px; font-weight:bold; display:block; margin-top:3px;">LAMPU REV</span>
           </div>
+
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Poin 4: Banner Peringatan Korsleting -->
   <div id="short-circuit-alert">⚠️ BAHAYA: TERJADI KORSLETING (SHORT CIRCUIT)! MCB TRIP OTOMATIS.</div>
 
-  <!-- Poin 1: Modal Diagnostik Hasil Wiring -->
   <div id="diag-modal" onclick="closeDiagnostics(event)">
     <div class="diag-box" onclick="event.stopPropagation()">
       <div class="diag-title">
@@ -780,7 +821,7 @@
     let isMcbTripped = false;
     let isDeleteMode = false;
     let isAddPointMode = false;
-    let isLiveTrace = false; // Poin 3: Live Trace Voltage
+    let isLiveTrace = false;
     let buttonStates = { '00': false, '01': false, '02': false };
     let plcInternalLogic = { fwdLatched: false, revLatched: false };
     let wireIdCounter = 1;
@@ -790,7 +831,6 @@
     const stage = document.getElementById('panzoom-layer');
     const viewport = document.getElementById('viewport-container');
 
-    // SISTEM TRANSFORM (ZOOM & PAN)
     let scale = 1;
     let panX = 0;
     let panY = 0;
@@ -957,7 +997,6 @@
       el.classList.add('active');
     }
 
-    // Poin 3: Toggle Live Trace
     function toggleLiveTrace() {
       isLiveTrace = !isLiveTrace;
       const btn = document.getElementById('btn-trace');
@@ -1007,7 +1046,6 @@
 
     function toggleMCB() {
       if (isMcbTripped) {
-        // Reset trip
         isMcbTripped = false;
         isMcbOn = false;
         document.getElementById('mcb').classList.remove('tripped');
@@ -1031,7 +1069,6 @@
       evaluateCircuit();
     }
 
-    // Poin 4: Fungsi Memicu Korsleting
     function triggerShortCircuit(reason) {
       if (isMcbTripped) return;
       isMcbTripped = true;
@@ -1227,7 +1264,6 @@
       wires.forEach(renderWire);
     }
 
-    // Dragging Waypoints
     const onHandleMove = (e) => {
       if (!draggingHandle) return;
       const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -1274,7 +1310,7 @@
 
     function saveWiring() {
       const exportData = {
-        version: "1.5",
+        version: "1.6",
         wires: wires.map(w => ({
           from: w.from,
           to: w.to,
@@ -1350,12 +1386,8 @@
     }
 
     function evaluateCircuit() {
-      // -------------------------------------------------------------
-      // POIN 4: DETEKSI KORSLETING (SHORT CIRCUIT)
-      // -------------------------------------------------------------
-      // 1. Korsleting AC: Hubungan langsung Fasa PLN dan Netral PLN
+      // 1. Deteksi Hubungan Singkat / Short Circuit
       const acShortDirect = areNodesConnected('PLN_LINE', 'PLN_NEUTRAL');
-      // 2. Korsleting DC: Hubungan langsung terminal +V dan -V PSU
       const dcShortDirect = areNodesConnected('PSU_+V', 'PSU_-V');
 
       if (acShortDirect && isMcbOn && !isMcbTripped) {
@@ -1372,7 +1404,7 @@
         document.getElementById('mcb').classList.remove('tripped');
       }
 
-      // Evaluasi Sumber
+      // Evaluasi Daya Utama
       const psuHasPhase = areNodesConnected('PLN_LINE', 'PSU_AC_L');
       const psuHasNeutral = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
       const psuActive = !isMcbTripped && psuHasPhase && psuHasNeutral;
@@ -1383,6 +1415,7 @@
 
       document.getElementById('led-pwr').className = 'led' + (plcPowered ? ' active-pwr' : '');
 
+      // Evaluasi Sinyal Input
       const inputComGrounded = psuActive && areNodesConnected('PLC_IN_COM', 'PSU_-V');
       const in00_active = plcPowered && inputComGrounded && areNodesConnected('PSU_+V', 'PLC_IN_00');
       const in01_active = plcPowered && inputComGrounded && areNodesConnected('PSU_+V', 'PLC_IN_01');
@@ -1414,24 +1447,24 @@
       const com0_phase = areNodesConnected('PLN_LINE', 'PLC_OUT_COM0');
       const com1_phase = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
 
-      const lampFwd_ok = areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL');
+      // BEBAN LAMPU NON-POLARITAS (Bisa Bolak-Balik Terhubung ke Output PLC maupun Netral)
+      const lampFwd_ok = 
+        (areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL')) ||
+        (areNodesConnected('PLC_OUT_00', 'LP_FWD_N') && areNodesConnected('LP_FWD_L', 'PLN_NEUTRAL'));
+
       const lampRev_ok = 
-  (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
-  (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
+        (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
+        (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
 
       document.getElementById('lamp-fwd').className = 'pilot-lamp lamp-green' + (out00_active && com0_phase && lampFwd_ok ? ' lit' : '');
       document.getElementById('lamp-rev').className = 'pilot-lamp lamp-yellow' + (out01_active && com1_phase && lampRev_ok ? ' lit' : '');
 
-      // -------------------------------------------------------------
-      // POIN 3: LIVE TRACE ARUS/TEGANGAN AKTIF
-      // -------------------------------------------------------------
+      // Animasi Live Trace
       wires.forEach(w => {
         w.pathVisible.classList.remove('wire-energized', 'wire-energized-ac');
         if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
 
-        // Cek apakah jalur kabel ini bertegangan DC (+24V aktif)
         const connectedToDcPlus = psuActive && (areNodesConnected(w.from, 'PSU_+V') || areNodesConnected(w.to, 'PSU_+V'));
-        // Cek apakah jalur kabel ini bertegangan Fasa AC
         const connectedToAcLine = areNodesConnected(w.from, 'PLN_LINE') || areNodesConnected(w.to, 'PLN_LINE');
 
         if (connectedToDcPlus) {
@@ -1463,15 +1496,11 @@
       }
     }
 
-    // -------------------------------------------------------------
-    // POIN 1: MODUL DIAGNOSTIK & WIRING VALIDATOR
-    // -------------------------------------------------------------
     function openDiagnostics() {
       const diagModal = document.getElementById('diag-modal');
       const diagList = document.getElementById('diag-list');
       diagList.innerHTML = '';
 
-      // Evaluasi Detail
       const mcbInOk = areNodesConnected('PLN_LINE', 'MCB_IN');
       const psuAcPhaseOk = areNodesConnected('PLN_LINE', 'PSU_AC_L');
       const psuAcNeutralOk = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
@@ -1489,12 +1518,14 @@
       const pbRevTo02 = areNodesConnected('PLC_IN_02', 'PB2_T1') || areNodesConnected('PLC_IN_02', 'PB2_T2');
 
       const com0PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM0');
-      const out00ToLamp = areNodesConnected('PLC_OUT_00', 'LP_FWD_L');
-      const lampFwdNeutral = areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL');
+      const lampFwd_ok = 
+        (areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL')) ||
+        (areNodesConnected('PLC_OUT_00', 'LP_FWD_N') && areNodesConnected('LP_FWD_L', 'PLN_NEUTRAL'));
 
       const com1PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
-      const out01ToLamp = areNodesConnected('PLC_OUT_01', 'LP_REV_L');
-      const lampRevNeutral = areNodesConnected('LP_REV_N', 'PLN_NEUTRAL');
+      const lampRev_ok = 
+        (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
+        (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
 
       const checks = [
         { name: "Proteksi MCB", ok: mcbInOk, msg: "PLN Fasa (L) terhubung ke MCB IN", err: "Kabel Fasa PLN belum disambung ke terminal MCB IN." },
@@ -1504,8 +1535,8 @@
         { name: "Wiring PB STOP (00)", ok: pbStopFeed && pbStopTo00, msg: "Tombol STOP terhubung dari +V ke Input 00", err: "Tombol STOP (merah) belum tersambung lengkap antara +V PSU dan terminal 00." },
         { name: "Wiring PB FORWARD (01)", ok: pbFwdFeed && pbFwdTo01, msg: "Tombol START FWD terhubung dari +V ke Input 01", err: "Tombol FWD (hijau) belum tersambung antara +V PSU dan terminal 01." },
         { name: "Wiring PB REVERSE (02)", ok: pbRevFeed && pbRevTo02, msg: "Tombol START REV terhubung dari +V ke Input 02", err: "Tombol REV (kuning) belum tersambung antara +V PSU dan terminal 02." },
-        { name: "Output Forward (100.00)", ok: com0PhaseOk && out00ToLamp && lampFwdNeutral, msg: "COM0 berfasa, Output 100.00 & Lampu FWD lengkap", err: "Rangkaian Lampu Hijau (FWD) belum lengkap (periksa COM0, 100.00, atau Netral lampu)." },
-        { name: "Output Reverse (100.01)", ok: com1PhaseOk && out01ToLamp && lampRevNeutral, msg: "COM1 berfasa, Output 100.01 & Lampu REV lengkap", err: "Rangkaian Lampu Kuning (REV) belum lengkap (periksa COM1, 100.01, atau Netral lampu)." }
+        { name: "Output Forward (100.00)", ok: com0PhaseOk && lampFwd_ok, msg: "COM0 berfasa & Rangkaian Lampu FWD lengkap", err: "Lampu Hijau belum lengkap. Hubungkan 1 kaki lampu ke terminal 100.00 dan 1 kaki lainnya ke Netral (N), serta COM0 ke Fasa PLN." },
+        { name: "Output Reverse (100.01)", ok: com1PhaseOk && lampRev_ok, msg: "COM1 berfasa & Rangkaian Lampu REV lengkap", err: "Lampu Kuning belum lengkap. Hubungkan 1 kaki lampu ke terminal 100.01 dan 1 kaki lainnya ke Netral (N), serta COM1 ke Fasa PLN." }
       ];
 
       checks.forEach(c => {
