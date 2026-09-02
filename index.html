@@ -1415,7 +1415,9 @@
       const com1_phase = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
 
       const lampFwd_ok = areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL');
-      const lampRev_ok = areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL');
+      const lampRev_ok = 
+  (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
+  (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
 
       document.getElementById('lamp-fwd').className = 'pilot-lamp lamp-green' + (out00_active && com0_phase && lampFwd_ok ? ' lit' : '');
       document.getElementById('lamp-rev').className = 'pilot-lamp lamp-yellow' + (out01_active && com1_phase && lampRev_ok ? ' lit' : '');
