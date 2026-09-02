@@ -57,17 +57,24 @@
     .btn-undo { background: #2980b9; border-color: #3498db; }
     .btn-io { background: #27ae60; border-color: #2ecc71; }
     
-    /* Tombol Mode Khusus */
-    .btn-mode-addpt {
-      background: #d35400;
-      border-color: #e67e22;
+    /* Tombol Diagnostik & Live Trace */
+    .btn-diag { background: #8e44ad; border-color: #9b59b6; }
+    .btn-diag:hover { background: #9b59b6; }
+    .btn-trace { background: #16a085; border-color: #1abc9c; }
+    .btn-trace.active {
+      background: #1abc9c;
+      border-color: #fff;
+      box-shadow: 0 0 10px rgba(26, 188, 156, 0.8);
+      font-weight: bold;
     }
+
+    /* Tombol Mode Khusus */
+    .btn-mode-addpt { background: #d35400; border-color: #e67e22; }
     .btn-mode-addpt:hover { background: #e67e22; }
     .btn-mode-addpt.active {
       background: #e67e22;
       border-color: #fff;
       box-shadow: 0 0 10px rgba(230, 126, 34, 0.9);
-      color: #fff;
       font-weight: bold;
     }
 
@@ -150,23 +157,15 @@
       cursor: grab;
       touch-action: none;
     }
-    #viewport-container.panning {
-      cursor: grabbing;
-    }
-    #viewport-container.addpt-cursor {
-      cursor: copy !important;
-    }
-    #viewport-container.delete-cursor {
-      cursor: crosshair !important;
-    }
+    #viewport-container.panning { cursor: grabbing; }
+    #viewport-container.addpt-cursor { cursor: copy !important; }
+    #viewport-container.delete-cursor { cursor: crosshair !important; }
 
     /* Transform Wrapper (Pan & Zoom Container) */
     #panzoom-layer {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 1060px;
-      height: 620px;
+      top: 0; left: 0;
+      width: 1060px; height: 620px;
       transform-origin: 0 0;
       background: #e8ecf1;
       box-shadow: 0 0 25px rgba(0,0,0,0.5);
@@ -176,8 +175,7 @@
     svg#wire-layer {
       position: absolute;
       top: 0; left: 0;
-      width: 1060px;
-      height: 620px;
+      width: 1060px; height: 620px;
       z-index: 10;
       pointer-events: none;
     }
@@ -211,6 +209,22 @@
       stroke-dasharray: 6 3;
     }
 
+    /* Live Trace Voltage Animation */
+    @keyframes dashMove {
+      from { stroke-dashoffset: 24; }
+      to { stroke-dashoffset: 0; }
+    }
+    .wire-energized {
+      stroke-dasharray: 8 4 !important;
+      animation: dashMove 0.6s linear infinite !important;
+      filter: drop-shadow(0 0 5px #00e676) !important;
+    }
+    .wire-energized-ac {
+      stroke-dasharray: 8 4 !important;
+      animation: dashMove 0.4s linear infinite !important;
+      filter: drop-shadow(0 0 6px #ff7675) !important;
+    }
+
     /* Waypoint Handles */
     .waypoint-handle {
       pointer-events: all;
@@ -220,10 +234,7 @@
       stroke-width: 2px;
       transition: r 0.1s;
     }
-    .waypoint-handle:hover {
-      r: 9;
-      fill: #e67e22;
-    }
+    .waypoint-handle:hover { r: 9; fill: #e67e22; }
 
     .component {
       position: absolute;
@@ -236,8 +247,7 @@
 
     /* Terminal Screw */
     .terminal {
-      width: 22px;
-      height: 22px;
+      width: 22px; height: 22px;
       background: var(--terminal-screw);
       border-radius: 50%;
       border: 2px solid #333;
@@ -254,8 +264,7 @@
     }
     .terminal::after {
       content: '';
-      width: 10px;
-      height: 2px;
+      width: 10px; height: 2px;
       background: #222;
     }
     .term-label {
@@ -299,6 +308,11 @@
       justify-content: space-between;
       align-items: center;
       padding: 8px 4px;
+      transition: box-shadow 0.2s;
+    }
+    #mcb.tripped {
+      box-shadow: 0 0 20px #ff1744;
+      border-color: #ff1744;
     }
     .mcb-switch {
       width: 30px; height: 48px;
@@ -309,11 +323,16 @@
       align-items: center;
       justify-content: center;
       color: white;
-      font-size: 11px;
+      font-size: 10px;
       font-weight: bold;
       border: 2px solid #222;
+      transition: background 0.2s;
     }
     .mcb-switch.off { background: #c0392b; }
+    .mcb-switch.tripped-lever {
+      background: #d63031;
+      box-shadow: 0 0 8px red;
+    }
 
     #psu {
       left: 135px; top: 78px;
@@ -444,17 +463,71 @@
     .lamp-green.lit { background: #00e676; box-shadow: 0 0 20px #00e676; }
     .lamp-yellow.lit { background: #ffea00; box-shadow: 0 0 20px #ffea00; }
 
-    .touch-guide {
-      position: absolute;
-      bottom: 8px;
-      right: 12px;
-      background: rgba(0,0,0,0.7);
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-size: 10px;
-      color: #aaa;
-      pointer-events: none;
-      z-index: 60;
+    /* Modal Diagnostik */
+    #diag-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.65);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .diag-box {
+      background: #23272a;
+      border: 2px solid #4e5d6c;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 520px;
+      padding: 16px;
+      color: #ecf0f1;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    }
+    .diag-title {
+      font-size: 15px;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #36393f;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+    .diag-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    .diag-icon {
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Banner Animasi Korsleting */
+    #short-circuit-alert {
+      display: none;
+      position: fixed;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #c0392b;
+      color: #fff;
+      border: 2px solid #fff;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 13px;
+      z-index: 110;
+      box-shadow: 0 0 25px #ff1744;
+      animation: blinkAlert 0.4s infinite alternate;
+    }
+    @keyframes blinkAlert {
+      from { opacity: 0.85; transform: translateX(-50%) scale(0.98); }
+      to { opacity: 1; transform: translateX(-50%) scale(1.02); }
     }
   </style>
 </head>
@@ -463,7 +536,6 @@
   <div id="toolbar">
     <span style="font-size:12px; font-weight:bold; color:#ecf0f1;">PLC Workbench</span>
     
-    <!-- Tombol Zoom & Pan -->
     <div class="zoom-controls">
       <button class="zoom-btn" onclick="zoomIn()" title="Perbesar">+</button>
       <span id="zoom-label">100%</span>
@@ -471,8 +543,14 @@
       <button class="btn" style="padding: 2px 6px; font-size:10px;" onclick="resetZoomPan()">Fit</button>
     </div>
 
-    <!-- Opsi Alat Tambah Titik Belok Kabel -->
-    <button class="btn btn-mode-addpt" id="btn-addpt" onclick="toggleAddPointMode()" title="Aktifkan alat untuk menambah titik belok kabel">📍 Alat Tambah Titik</button>
+    <!-- Poin 1: Validasi Diagnostik Otomatis -->
+    <button class="btn btn-diag" onclick="openDiagnostics()">🔍 Periksa Rangkaian</button>
+    
+    <!-- Poin 3: Live Trace Aliran Tegangan -->
+    <button class="btn btn-trace" id="btn-trace" onclick="toggleLiveTrace()">⚡ Live Trace Arus</button>
+
+    <!-- Poin Pilihan Alat Tambah Titik -->
+    <button class="btn btn-mode-addpt" id="btn-addpt" onclick="toggleAddPointMode()">📍 Alat Tambah Titik</button>
 
     <button class="btn btn-delete-mode" id="btn-delete" onclick="toggleDeleteMode()">✂ Mode Hapus</button>
     <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
@@ -675,8 +753,23 @@
         </div>
       </div>
     </div>
-    
-    <div class="touch-guide">🔍 Cubit 2 jari untuk Zoom • Geser layar untuk Pan</div>
+  </div>
+
+  <!-- Poin 4: Banner Peringatan Korsleting -->
+  <div id="short-circuit-alert">⚠️ BAHAYA: TERJADI KORSLETING (SHORT CIRCUIT)! MCB TRIP OTOMATIS.</div>
+
+  <!-- Poin 1: Modal Diagnostik Hasil Wiring -->
+  <div id="diag-modal" onclick="closeDiagnostics(event)">
+    <div class="diag-box" onclick="event.stopPropagation()">
+      <div class="diag-title">
+        <span>📋 Diagnostik & Verifikasi Wiring PLC</span>
+        <button class="btn" style="padding:2px 8px;" onclick="closeDiagnostics()">✕</button>
+      </div>
+      <div id="diag-list"></div>
+      <div style="text-align:right; margin-top:14px;">
+        <button class="btn btn-io" onclick="closeDiagnostics()">Tutup</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -684,8 +777,10 @@
     let selectedTerminal = null;
     let wires = [];
     let isMcbOn = true;
+    let isMcbTripped = false;
     let isDeleteMode = false;
-    let isAddPointMode = false; // Mode khusus menambah titik belokan
+    let isAddPointMode = false;
+    let isLiveTrace = false; // Poin 3: Live Trace Voltage
     let buttonStates = { '00': false, '01': false, '02': false };
     let plcInternalLogic = { fwdLatched: false, revLatched: false };
     let wireIdCounter = 1;
@@ -862,10 +957,17 @@
       el.classList.add('active');
     }
 
-    // Toggle Mode Tambah Titik Belok
+    // Poin 3: Toggle Live Trace
+    function toggleLiveTrace() {
+      isLiveTrace = !isLiveTrace;
+      const btn = document.getElementById('btn-trace');
+      btn.classList.toggle('active', isLiveTrace);
+      evaluateCircuit();
+    }
+
     function toggleAddPointMode() {
       isAddPointMode = !isAddPointMode;
-      if (isAddPointMode && isDeleteMode) toggleDeleteMode(); // Matikan mode hapus jika aktif
+      if (isAddPointMode && isDeleteMode) toggleDeleteMode();
 
       const btn = document.getElementById('btn-addpt');
       const stat = document.getElementById('status-bar');
@@ -904,16 +1006,51 @@
     }
 
     function toggleMCB() {
+      if (isMcbTripped) {
+        // Reset trip
+        isMcbTripped = false;
+        isMcbOn = false;
+        document.getElementById('mcb').classList.remove('tripped');
+        document.getElementById('short-circuit-alert').style.display = 'none';
+        const sw = document.getElementById('mcb-toggle');
+        sw.className = 'mcb-switch off';
+        sw.textContent = 'OFF';
+        evaluateCircuit();
+        return;
+      }
+
       isMcbOn = !isMcbOn;
       const sw = document.getElementById('mcb-toggle');
       if (isMcbOn) {
-        sw.classList.remove('off');
+        sw.className = 'mcb-switch';
         sw.textContent = 'ON';
       } else {
-        sw.classList.add('off');
+        sw.className = 'mcb-switch off';
         sw.textContent = 'OFF';
       }
       evaluateCircuit();
+    }
+
+    // Poin 4: Fungsi Memicu Korsleting
+    function triggerShortCircuit(reason) {
+      if (isMcbTripped) return;
+      isMcbTripped = true;
+      isMcbOn = false;
+
+      const mcbEl = document.getElementById('mcb');
+      mcbEl.classList.add('tripped');
+
+      const sw = document.getElementById('mcb-toggle');
+      sw.className = 'mcb-switch tripped-lever';
+      sw.textContent = 'TRIP';
+
+      const alertBanner = document.getElementById('short-circuit-alert');
+      alertBanner.textContent = `⚠️ KORSLETING (${reason})! MCB TRIP OTOMATIS UNTUK PROTEKSI.`;
+      alertBanner.style.display = 'block';
+
+      const stat = document.getElementById('status-bar');
+      stat.textContent = 'KORSLETING TERDETEKSI: MCB TRIP!';
+      stat.style.color = '#ff1744';
     }
 
     function getTerminalCenter(el) {
@@ -925,7 +1062,6 @@
       };
     }
 
-    // Wiring Interaction
     document.querySelectorAll('.terminal').forEach(term => {
       term.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -970,8 +1106,6 @@
 
       const handleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 
-      // Penanganan Klik / Sentuh Kabel:
-      // Hanya menambah titik jika "Alat Tambah Titik" aktif!
       const onWireTap = (e) => {
         e.stopPropagation();
         if (isDeleteMode) {
@@ -1140,7 +1274,7 @@
 
     function saveWiring() {
       const exportData = {
-        version: "1.4",
+        version: "1.5",
         wires: wires.map(w => ({
           from: w.from,
           to: w.to,
@@ -1195,7 +1329,7 @@
         if (w.to === startNode && !visited.has(w.from)) directNeighbors.push(w.from);
       });
 
-      if (isMcbOn) {
+      if (isMcbOn && !isMcbTripped) {
         if (startNode === 'MCB_IN' && !visited.has('MCB_OUT')) directNeighbors.push('MCB_OUT');
         if (startNode === 'MCB_OUT' && !visited.has('MCB_IN')) directNeighbors.push('MCB_IN');
       }
@@ -1216,13 +1350,36 @@
     }
 
     function evaluateCircuit() {
+      // -------------------------------------------------------------
+      // POIN 4: DETEKSI KORSLETING (SHORT CIRCUIT)
+      // -------------------------------------------------------------
+      // 1. Korsleting AC: Hubungan langsung Fasa PLN dan Netral PLN
+      const acShortDirect = areNodesConnected('PLN_LINE', 'PLN_NEUTRAL');
+      // 2. Korsleting DC: Hubungan langsung terminal +V dan -V PSU
+      const dcShortDirect = areNodesConnected('PSU_+V', 'PSU_-V');
+
+      if (acShortDirect && isMcbOn && !isMcbTripped) {
+        triggerShortCircuit('Hubungan Singkat Fasa (L) ke Netral (N)');
+        return;
+      }
+      if (dcShortDirect && isMcbOn && !isMcbTripped) {
+        triggerShortCircuit('Hubungan Singkat Beban DC (+V ke -V)');
+        return;
+      }
+
+      if (!acShortDirect && !dcShortDirect && !isMcbTripped) {
+        document.getElementById('short-circuit-alert').style.display = 'none';
+        document.getElementById('mcb').classList.remove('tripped');
+      }
+
+      // Evaluasi Sumber
       const psuHasPhase = areNodesConnected('PLN_LINE', 'PSU_AC_L');
       const psuHasNeutral = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
-      const psuActive = psuHasPhase && psuHasNeutral;
+      const psuActive = !isMcbTripped && psuHasPhase && psuHasNeutral;
 
       const plcHasPhase = areNodesConnected('PLN_LINE', 'PLC_L1');
       const plcHasNeutral = areNodesConnected('PLN_NEUTRAL', 'PLC_L2N');
-      const plcPowered = plcHasPhase && plcHasNeutral;
+      const plcPowered = !isMcbTripped && plcHasPhase && plcHasNeutral;
 
       document.getElementById('led-pwr').className = 'led' + (plcPowered ? ' active-pwr' : '');
 
@@ -1263,8 +1420,30 @@
       document.getElementById('lamp-fwd').className = 'pilot-lamp lamp-green' + (out00_active && com0_phase && lampFwd_ok ? ' lit' : '');
       document.getElementById('lamp-rev').className = 'pilot-lamp lamp-yellow' + (out01_active && com1_phase && lampRev_ok ? ' lit' : '');
 
+      // -------------------------------------------------------------
+      // POIN 3: LIVE TRACE ARUS/TEGANGAN AKTIF
+      // -------------------------------------------------------------
+      wires.forEach(w => {
+        w.pathVisible.classList.remove('wire-energized', 'wire-energized-ac');
+        if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
+
+        // Cek apakah jalur kabel ini bertegangan DC (+24V aktif)
+        const connectedToDcPlus = psuActive && (areNodesConnected(w.from, 'PSU_+V') || areNodesConnected(w.to, 'PSU_+V'));
+        // Cek apakah jalur kabel ini bertegangan Fasa AC
+        const connectedToAcLine = areNodesConnected(w.from, 'PLN_LINE') || areNodesConnected(w.to, 'PLN_LINE');
+
+        if (connectedToDcPlus) {
+          w.pathVisible.classList.add('wire-energized');
+        } else if (connectedToAcLine) {
+          w.pathVisible.classList.add('wire-energized-ac');
+        }
+      });
+
       const stat = document.getElementById('status-bar');
-      if (isAddPointMode) {
+      if (isMcbTripped) {
+        stat.textContent = "MCB TRIP KARENA KORSLETING!";
+        stat.style.color = "#ff1744";
+      } else if (isAddPointMode) {
         stat.textContent = "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
         stat.style.color = "#f39c12";
       } else if (isDeleteMode) {
@@ -1280,6 +1459,70 @@
         stat.textContent = "STATUS: RUNNING";
         stat.style.color = "#00e676";
       }
+    }
+
+    // -------------------------------------------------------------
+    // POIN 1: MODUL DIAGNOSTIK & WIRING VALIDATOR
+    // -------------------------------------------------------------
+    function openDiagnostics() {
+      const diagModal = document.getElementById('diag-modal');
+      const diagList = document.getElementById('diag-list');
+      diagList.innerHTML = '';
+
+      // Evaluasi Detail
+      const mcbInOk = areNodesConnected('PLN_LINE', 'MCB_IN');
+      const psuAcPhaseOk = areNodesConnected('PLN_LINE', 'PSU_AC_L');
+      const psuAcNeutralOk = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
+      const plcL1Ok = areNodesConnected('PLN_LINE', 'PLC_L1');
+      const plcL2NOk = areNodesConnected('PLN_NEUTRAL', 'PLC_L2N');
+
+      const comInputGrounded = areNodesConnected('PLC_IN_COM', 'PSU_-V');
+      const pbStopFeed = areNodesConnected('PSU_+V', 'PB0_T1') || areNodesConnected('PSU_+V', 'PB0_T2');
+      const pbStopTo00 = areNodesConnected('PLC_IN_00', 'PB0_T1') || areNodesConnected('PLC_IN_00', 'PB0_T2');
+
+      const pbFwdFeed = areNodesConnected('PSU_+V', 'PB1_T1') || areNodesConnected('PSU_+V', 'PB1_T2');
+      const pbFwdTo01 = areNodesConnected('PLC_IN_01', 'PB1_T1') || areNodesConnected('PLC_IN_01', 'PB1_T2');
+
+      const pbRevFeed = areNodesConnected('PSU_+V', 'PB2_T1') || areNodesConnected('PSU_+V', 'PB2_T2');
+      const pbRevTo02 = areNodesConnected('PLC_IN_02', 'PB2_T1') || areNodesConnected('PLC_IN_02', 'PB2_T2');
+
+      const com0PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM0');
+      const out00ToLamp = areNodesConnected('PLC_OUT_00', 'LP_FWD_L');
+      const lampFwdNeutral = areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL');
+
+      const com1PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
+      const out01ToLamp = areNodesConnected('PLC_OUT_01', 'LP_REV_L');
+      const lampRevNeutral = areNodesConnected('LP_REV_N', 'PLN_NEUTRAL');
+
+      const checks = [
+        { name: "Proteksi MCB", ok: mcbInOk, msg: "PLN Fasa (L) terhubung ke MCB IN", err: "Kabel Fasa PLN belum disambung ke terminal MCB IN." },
+        { name: "Catu Daya PSU AC", ok: psuAcPhaseOk && psuAcNeutralOk, msg: "PSU menerima suplai 220V AC (L & N)", err: "Terminal L atau N pada Power Supply belum terhubung ke listrik PLN." },
+        { name: "Daya Utama PLC", ok: plcL1Ok && plcL2NOk, msg: "PLC Omron CP1E hidup (L1 & L2/N terhubung)", err: "PLC mati. Terminal L1 dan L2/N PLC belum tersambung ke Fasa & Netral." },
+        { name: "Common Input PLC", ok: comInputGrounded, msg: "Terminal COM Input terhubung ke -V (0V DC)", err: "Terminal COM Input atas belum disambung ke kutub -V (0V) Power Supply." },
+        { name: "Wiring PB STOP (00)", ok: pbStopFeed && pbStopTo00, msg: "Tombol STOP terhubung dari +V ke Input 00", err: "Tombol STOP (merah) belum tersambung lengkap antara +V PSU dan terminal 00." },
+        { name: "Wiring PB FORWARD (01)", ok: pbFwdFeed && pbFwdTo01, msg: "Tombol START FWD terhubung dari +V ke Input 01", err: "Tombol FWD (hijau) belum tersambung antara +V PSU dan terminal 01." },
+        { name: "Wiring PB REVERSE (02)", ok: pbRevFeed && pbRevTo02, msg: "Tombol START REV terhubung dari +V ke Input 02", err: "Tombol REV (kuning) belum tersambung antara +V PSU dan terminal 02." },
+        { name: "Output Forward (100.00)", ok: com0PhaseOk && out00ToLamp && lampFwdNeutral, msg: "COM0 berfasa, Output 100.00 & Lampu FWD lengkap", err: "Rangkaian Lampu Hijau (FWD) belum lengkap (periksa COM0, 100.00, atau Netral lampu)." },
+        { name: "Output Reverse (100.01)", ok: com1PhaseOk && out01ToLamp && lampRevNeutral, msg: "COM1 berfasa, Output 100.01 & Lampu REV lengkap", err: "Rangkaian Lampu Kuning (REV) belum lengkap (periksa COM1, 100.01, atau Netral lampu)." }
+      ];
+
+      checks.forEach(c => {
+        const item = document.createElement('div');
+        item.className = 'diag-item';
+        item.innerHTML = `
+          <div class="diag-icon" style="color:${c.ok ? '#00e676' : '#ff5252'}">${c.ok ? '✅' : '❌'}</div>
+          <div>
+            <b>${c.name}:</b> ${c.ok ? `<span style="color:#00e676">${c.msg}</span>` : `<span style="color:#ff7675">${c.err}</span>`}
+          </div>
+        `;
+        diagList.appendChild(item);
+      });
+
+      diagModal.style.display = 'flex';
+    }
+
+    function closeDiagnostics() {
+      document.getElementById('diag-modal').style.display = 'none';
     }
 
     resetZoomPan();
