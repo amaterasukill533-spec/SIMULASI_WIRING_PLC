@@ -1,1565 +1,2515 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>PLC Wiring Workbench Simulator</title>
-  <style>
-    :root {
-      --bg-panel: #2b2e38;
-      --plc-body: #1e2024;
-      --terminal-screw: #d1d8e0;
-      --terminal-hover: #f1c40f;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
-    body {
-      background: #121315;
-      color: #ecf0f1;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      overflow: hidden;
-    }
-
-    /* Toolbar Responsif */
-    #toolbar {
-      background: #23272a;
-      padding: 6px 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border-bottom: 2px solid #36393f;
-      z-index: 50;
-      overflow-x: auto;
-      white-space: nowrap;
-      flex-shrink: 0;
-      -webkit-overflow-scrolling: touch;
-    }
-    #toolbar::-webkit-scrollbar { height: 3px; }
-    #toolbar::-webkit-scrollbar-thumb { background: #555; }
-
-    .btn {
-      background: #34495e;
-      color: white;
-      border: 1px solid #4e5d6c;
-      padding: 6px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 11px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-      transition: all 0.15s;
-    }
-    .btn:hover { background: #415b76; }
-    .btn-undo { background: #2980b9; border-color: #3498db; }
-    .btn-io { background: #27ae60; border-color: #2ecc71; }
-    
-    /* Tombol Diagnostik & Live Trace */
-    .btn-diag { background: #8e44ad; border-color: #9b59b6; }
-    .btn-diag:hover { background: #9b59b6; }
-    .btn-trace { background: #16a085; border-color: #1abc9c; }
-    .btn-trace.active {
-      background: #1abc9c;
-      border-color: #fff;
-      box-shadow: 0 0 10px rgba(26, 188, 156, 0.8);
-      font-weight: bold;
-    }
-
-    /* Tombol Mode Khusus */
-    .btn-mode-addpt { background: #d35400; border-color: #e67e22; }
-    .btn-mode-addpt:hover { background: #e67e22; }
-    .btn-mode-addpt.active {
-      background: #e67e22;
-      border-color: #fff;
-      box-shadow: 0 0 10px rgba(230, 126, 34, 0.9);
-      font-weight: bold;
-    }
-
-    .btn-delete-mode { background: #c0392b; border-color: #e74c3c; }
-    .btn-delete-mode.active {
-      background: #ff1744;
-      border-color: #fff;
-      box-shadow: 0 0 10px rgba(255, 23, 68, 0.8);
-    }
-
-    .zoom-controls {
-      display: inline-flex;
-      align-items: center;
-      background: #1a1c1e;
-      border: 1px solid #444;
-      border-radius: 4px;
-      padding: 2px 4px;
-      gap: 4px;
-      flex-shrink: 0;
-    }
-    .zoom-btn {
-      background: #2c3e50;
-      color: white;
-      border: none;
-      width: 24px;
-      height: 24px;
-      border-radius: 3px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .zoom-btn:hover { background: #34495e; }
-    #zoom-label {
-      font-size: 11px;
-      font-family: monospace;
-      min-width: 38px;
-      text-align: center;
-      color: #00e676;
-    }
-
-    .color-picker {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      background: #1e2024;
-      padding: 3px 8px;
-      border-radius: 4px;
-      border: 1px solid #36393f;
-      flex-shrink: 0;
-    }
-    .color-dot {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-    }
-    .color-dot.active { border-color: white; transform: scale(1.15); }
-
-    #status-bar {
-      margin-left: auto;
-      font-size: 11px;
-      font-family: monospace;
-      color: #00e676;
-      font-weight: bold;
-      flex-shrink: 0;
-      padding-left: 10px;
-    }
-
-    /* Viewport Area */
-    #viewport-container {
-      flex: 1;
-      position: relative;
-      background: #18191c;
-      overflow: hidden;
-      cursor: grab;
-      touch-action: none;
-    }
-    #viewport-container.panning { cursor: grabbing; }
-    #viewport-container.addpt-cursor { cursor: copy !important; }
-    #viewport-container.delete-cursor { cursor: crosshair !important; }
-
-    /* Transform Wrapper (Pan & Zoom Container) */
-    #panzoom-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 1060px; height: 620px;
-      transform-origin: 0 0;
-      background: #e8ecf1;
-      box-shadow: 0 0 25px rgba(0,0,0,0.5);
-      will-change: transform;
-    }
-
-    svg#wire-layer {
-      position: absolute;
-      top: 0; left: 0;
-      width: 1060px; height: 620px;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .wire-hitbox {
-      pointer-events: stroke;
-      stroke: transparent;
-      stroke-width: 24px;
-      fill: none;
-      cursor: pointer;
-    }
-    .wire-visible {
-      pointer-events: none;
-      stroke-width: 4px;
-      fill: none;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      transition: stroke-width 0.15s, filter 0.15s;
-    }
-    .wire-group:hover .wire-visible {
-      stroke-width: 5px;
-      filter: drop-shadow(0 0 3px rgba(0,0,0,0.5));
-    }
-    #viewport-container.addpt-cursor .wire-group:hover .wire-visible {
-      stroke: #f39c12 !important;
-      stroke-width: 6px;
-    }
-    #viewport-container.delete-cursor .wire-group:hover .wire-visible {
-      stroke: #ff1744 !important;
-      stroke-width: 6px;
-      stroke-dasharray: 6 3;
-    }
-
-    /* Live Trace Voltage Animation */
-    @keyframes dashMove {
-      from { stroke-dashoffset: 24; }
-      to { stroke-dashoffset: 0; }
-    }
-    .wire-energized {
-      stroke-dasharray: 8 4 !important;
-      animation: dashMove 0.6s linear infinite !important;
-      filter: drop-shadow(0 0 5px #00e676) !important;
-    }
-    .wire-energized-ac {
-      stroke-dasharray: 8 4 !important;
-      animation: dashMove 0.4s linear infinite !important;
-      filter: drop-shadow(0 0 6px #ff7675) !important;
-    }
-
-    /* Waypoint Handles */
-    .waypoint-handle {
-      pointer-events: all;
-      cursor: move;
-      fill: #f39c12;
-      stroke: #fff;
-      stroke-width: 2px;
-      transition: r 0.1s;
-    }
-    .waypoint-handle:hover { r: 9; fill: #e67e22; }
-
-    .component {
-      position: absolute;
-      background: white;
-      border: 2px solid #555;
-      border-radius: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.18);
-      z-index: 5;
-    }
-
-    /* Terminal Screw */
-    .terminal {
-      width: 22px; height: 22px;
-      background: var(--terminal-screw);
-      border-radius: 50%;
-      border: 2px solid #333;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      position: relative;
-    }
-    .terminal:hover, .terminal.selected {
-      background: var(--terminal-hover);
-      box-shadow: 0 0 8px yellow;
-      transform: scale(1.15);
-    }
-    .terminal::after {
-      content: '';
-      width: 10px; height: 2px;
-      background: #222;
-    }
-    .term-label {
-      font-size: 11px;
-      font-family: monospace;
-      font-weight: bold;
-      color: #111;
-      text-align: center;
-      margin-bottom: 3px;
-    }
-
-    /* Layout Komponen */
-    #busbar-pln {
-      position: absolute;
-      top: 12px; left: 30px;
-      width: 1000px; height: 46px;
-      background: #ffffff;
-      border: 2px solid #888;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0 20px;
-      z-index: 5;
-    }
-    .bus-line {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 12px;
-      font-weight: bold;
-      font-family: monospace;
-    }
-
-    #mcb {
-      left: 30px; top: 78px;
-      width: 85px; height: 180px;
-      background: #f4f6f8;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      padding: 8px 4px;
-      transition: box-shadow 0.2s;
-    }
-    #mcb.tripped {
-      box-shadow: 0 0 20px #ff1744;
-      border-color: #ff1744;
-    }
-    .mcb-switch {
-      width: 30px; height: 48px;
-      background: #27ae60;
-      border-radius: 4px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 10px;
-      font-weight: bold;
-      border: 2px solid #222;
-      transition: background 0.2s;
-    }
-    .mcb-switch.off { background: #c0392b; }
-    .mcb-switch.tripped-lever {
-      background: #d63031;
-      box-shadow: 0 0 8px red;
-    }
-
-    #psu {
-      left: 135px; top: 78px;
-      width: 220px; height: 180px;
-      background: linear-gradient(135deg, #dcdde1 0%, #bdc3c7 100%);
-      border: 2px solid #7f8c8d;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 8px;
-    }
-    .psu-grill {
-      background: repeating-linear-gradient(45deg, #95a5a6, #95a5a6 4px, #bdc3c7 4px, #bdc3c7 8px);
-      height: 55px;
-      border-radius: 4px;
-      border: 1px solid #7f8c8d;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .psu-plate {
-      background: #2c3e50;
-      color: #ecf0f1;
-      font-size: 10px;
-      padding: 3px 8px;
-      font-weight: bold;
-      border-radius: 3px;
-      font-family: monospace;
-    }
-    .psu-terminal-block {
-      background: #222629;
-      border: 2px solid #111;
-      border-radius: 4px;
-      padding: 6px 4px;
-      display: flex;
-      justify-content: space-between;
-    }
-    .psu-term-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
-    .psu-term-item .term-label { font-size: 9px; font-weight: 800; }
-
-    #plc {
-      left: 375px; top: 78px;
-      width: 350px; height: 440px;
-      background: var(--plc-body);
-      border-color: #111;
-      color: white;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      padding: 10px;
-    }
-    .plc-row {
-      display: flex;
-      justify-content: space-around;
-      background: #2b2e38;
-      padding: 6px 2px;
-      border-radius: 4px;
-    }
-    .plc-term-wrap {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .plc-term-wrap .term-label { color: #f1f2f6; font-size: 10px; }
-    .plc-mid {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-    }
-    .plc-led-panel {
-      background: #111;
-      padding: 8px 12px;
-      border-radius: 4px;
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 6px 10px;
-      font-family: monospace;
-      font-size: 9px;
-    }
-    .led {
-      width: 8px; height: 8px;
-      background: #333;
-      border-radius: 50%;
-      margin: 0 auto 2px;
-    }
-    .led.active-pwr { background: #00e676; box-shadow: 0 0 6px #00e676; }
-    .led.active-in  { background: #ff9800; box-shadow: 0 0 6px #ff9800; }
-    .led.active-out { background: #e91e63; box-shadow: 0 0 6px #e91e63; }
-
-    #buttons-panel {
-      left: 745px; top: 78px;
-      width: 285px; height: 160px;
-      padding: 10px;
-      background: #ecf0f1;
-    }
-    .push-btn {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      border: 3px solid #7f8c8d;
-      cursor: pointer;
-      display: inline-block;
-      margin-bottom: 6px;
-    }
-    .push-btn:active { transform: scale(0.92); }
-    .btn-red { background: #e74c3c; }
-    .btn-green { background: #2ecc71; }
-    .btn-yellow { background: #f1c40f; }
-
-    /* PANEL LAMPU DENGAN PETUNJUK TERMINAL JELAS */
-    #lamp-panel {
-      left: 745px; top: 275px;
-      width: 285px; height: 180px;
-      padding: 10px;
-      background: #ecf0f1;
-    }
-    .pilot-lamp {
-      width: 44px; height: 44px;
-      border-radius: 50%;
-      background: #555;
-      margin: 0 auto 6px;
-      border: 3px solid #333;
-      transition: 0.2s;
-    }
-    .lamp-green.lit { background: #00e676; box-shadow: 0 0 20px #00e676; }
-    .lamp-yellow.lit { background: #ffea00; box-shadow: 0 0 20px #ffea00; }
-    
-    .lamp-term-container {
-      background: #dfe4ea;
-      border: 1px dashed #747d8c;
-      border-radius: 5px;
-      padding: 4px 6px;
-      margin-top: 4px;
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-    }
-    .lamp-term-col {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 2px;
-    }
-    .lamp-term-badge {
-      font-size: 8px;
-      font-weight: 800;
-      padding: 1px 4px;
-      border-radius: 3px;
-      letter-spacing: 0.3px;
-    }
-    .badge-out { background: #2ed573; color: #1e272e; }
-    .badge-out-rev { background: #ffa502; color: #1e272e; }
-    .badge-netral { background: #1e90ff; color: #fff; }
-
-    /* Modal Diagnostik */
-    #diag-modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(0,0,0,0.65);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
-    }
-    .diag-box {
-      background: #23272a;
-      border: 2px solid #4e5d6c;
-      border-radius: 8px;
-      width: 90%;
-      max-width: 520px;
-      padding: 16px;
-      color: #ecf0f1;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.6);
-    }
-    .diag-title {
-      font-size: 15px;
-      font-weight: bold;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #36393f;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-    .diag-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 10px;
-      font-size: 12px;
-      line-height: 1.4;
-    }
-    .diag-icon {
-      font-size: 14px;
-      flex-shrink: 0;
-      margin-top: 1px;
-    }
-
-    /* Banner Animasi Korsleting */
-    #short-circuit-alert {
-      display: none;
-      position: fixed;
-      top: 50px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #c0392b;
-      color: #fff;
-      border: 2px solid #fff;
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-weight: bold;
-      font-size: 13px;
-      z-index: 110;
-      box-shadow: 0 0 25px #ff1744;
-      animation: blinkAlert 0.4s infinite alternate;
-    }
-    @keyframes blinkAlert {
-      from { opacity: 0.85; transform: translateX(-50%) scale(0.98); }
-      to { opacity: 1; transform: translateX(-50%) scale(1.02); }
-    }
-  </style>
-</head>
-<body>
-
-  <div id="toolbar">
-    <span style="font-size:12px; font-weight:bold; color:#ecf0f1;">PLC Workbench</span>
-    
-    <div class="zoom-controls">
-      <button class="zoom-btn" onclick="zoomIn()" title="Perbesar">+</button>
-      <span id="zoom-label">100%</span>
-      <button class="zoom-btn" onclick="zoomOut()" title="Perkecil">-</button>
-      <button class="btn" style="padding: 2px 6px; font-size:10px;" onclick="resetZoomPan()">Fit</button>
-    </div>
-
-    <!-- Tombol Diagnostik & Live Trace -->
-    <button class="btn btn-diag" onclick="openDiagnostics()">🔍 Periksa Rangkaian</button>
-    <button class="btn btn-trace" id="btn-trace" onclick="toggleLiveTrace()">⚡ Live Trace Arus</button>
-    <button class="btn btn-mode-addpt" id="btn-addpt" onclick="toggleAddPointMode()">📍 Alat Tambah Titik</button>
-    <button class="btn btn-delete-mode" id="btn-delete" onclick="toggleDeleteMode()">✂ Mode Hapus</button>
-    <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
-    <button class="btn" onclick="clearAllWires()">Reset</button>
-    <button class="btn btn-io" onclick="saveWiring()">💾 Simpan</button>
-    <button class="btn btn-io" onclick="document.getElementById('load-input').click()">📂 Buka</button>
-    <input type="file" id="load-input" style="display:none" accept=".json" onchange="loadWiring(event)">
-
-    <div class="color-picker">
-      <div class="color-dot active" style="background:#e74c3c" onclick="setColor('#e74c3c', this)"></div>
-      <div class="color-dot" style="background:#2980b9" onclick="setColor('#2980b9', this)"></div>
-      <div class="color-dot" style="background:#27ae60" onclick="setColor('#27ae60', this)"></div>
-      <div class="color-dot" style="background:#f39c12" onclick="setColor('#f39c12', this)"></div>
-      <div class="color-dot" style="background:#111111" onclick="setColor('#111111', this)"></div>
-    </div>
-    
-    <div id="status-bar">STATUS: RUNNING</div>
-  </div>
-
-  <div id="viewport-container">
-    <div id="panzoom-layer">
-      <svg id="wire-layer"></svg>
-
-      <!-- Sumber PLN 220V AC -->
-      <div id="busbar-pln">
-        <div class="bus-line" style="color:#d35400;">
-          <span>SUMBER PLN [L] (Fasa 220V AC):</span>
-          <div class="terminal" data-id="PLN_LINE"></div>
-        </div>
-        <div class="bus-line" style="color:#2980b9;">
-          <span>SUMBER PLN [N] (Netral AC):</span>
-          <div class="terminal" data-id="PLN_NEUTRAL"></div>
-        </div>
-      </div>
-
-      <!-- MCB 1 FASA -->
-      <div class="component" id="mcb">
-        <div class="term-label">MCB IN</div>
-        <div class="terminal" data-id="MCB_IN"></div>
-        
-        <div style="text-align:center;">
-          <div class="mcb-switch" id="mcb-toggle" onclick="toggleMCB()">ON</div>
-          <div style="font-size:9px; font-weight:bold; margin-top:2px;">1P 6A</div>
-        </div>
-
-        <div class="term-label">MCB OUT</div>
-        <div class="terminal" data-id="MCB_OUT"></div>
-      </div>
-
-      <!-- POWER SUPPLY 24V DC (SMPS) -->
-      <div class="component" id="psu">
-        <div class="psu-grill">
-          <div class="psu-plate">POWER SUPPLY 24V DC</div>
-        </div>
-        
-        <div class="psu-terminal-block">
-          <div class="psu-term-item">
-            <div class="term-label" style="color:#ff7675;">L (AC)</div>
-            <div class="terminal" data-id="PSU_AC_L"></div>
-            <span style="font-size:7px; color:#aaa;">Fasa</span>
-          </div>
-          <div class="psu-term-item">
-            <div class="term-label" style="color:#74b9ff;">N (AC)</div>
-            <div class="terminal" data-id="PSU_AC_N"></div>
-            <span style="font-size:7px; color:#aaa;">Netral</span>
-          </div>
-          <div class="psu-term-item">
-            <div class="term-label" style="color:#fab1a0;">-V (0V)</div>
-            <div class="terminal" data-id="PSU_-V"></div>
-            <span style="font-size:7px; color:#aaa;">0V DC</span>
-          </div>
-          <div class="psu-term-item">
-            <div class="term-label" style="color:#ff3838;">+V (24V)</div>
-            <div class="terminal" data-id="PSU_+V"></div>
-            <span style="font-size:7px; color:#aaa;">+24V</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- OMRON CP1E PLC -->
-      <div class="component" id="plc">
-        <div class="plc-row">
-          <div class="plc-term-wrap">
-            <div class="term-label" style="color:#ff7675;">L1</div>
-            <div class="terminal" data-id="PLC_L1"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label" style="color:#74b9ff;">L2/N</div>
-            <div class="terminal" data-id="PLC_L2N"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label" style="color:#fdcb6e;">COM</div>
-            <div class="terminal" data-id="PLC_IN_COM"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">00</div>
-            <div class="terminal" data-id="PLC_IN_00"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">01</div>
-            <div class="terminal" data-id="PLC_IN_01"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">02</div>
-            <div class="terminal" data-id="PLC_IN_02"></div>
-          </div>
-        </div>
-
-        <div class="plc-mid">
-          <div style="font-weight:bold; font-size:13px; letter-spacing:1px;">OMRON CP1E</div>
-          <div class="plc-led-panel">
-            <div style="text-align:center"><div class="led" id="led-pwr"></div>PWR</div>
-            <div style="text-align:center"><div class="led" id="led-in-00"></div>00</div>
-            <div style="text-align:center"><div class="led" id="led-in-01"></div>01</div>
-            <div style="text-align:center"><div class="led" id="led-in-02"></div>02</div>
-            <div style="text-align:center"><div class="led" id="led-out-00"></div>100.00</div>
-            <div style="text-align:center"><div class="led" id="led-out-01"></div>100.01</div>
-          </div>
-        </div>
-
-        <div class="plc-row">
-          <div class="plc-term-wrap">
-            <div class="term-label">COM0</div>
-            <div class="terminal" data-id="PLC_OUT_COM0"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">100.00</div>
-            <div class="terminal" data-id="PLC_OUT_00"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">COM1</div>
-            <div class="terminal" data-id="PLC_OUT_COM1"></div>
-          </div>
-          <div class="plc-term-wrap">
-            <div class="term-label">100.01</div>
-            <div class="terminal" data-id="PLC_OUT_01"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PUSH BUTTON INPUTS -->
-      <div class="component" id="buttons-panel">
-        <div style="font-weight:bold; font-size:11px; margin-bottom:8px; text-align:center; color:#2c3e50;">PUSH BUTTON (DC)</div>
-        <div style="display:flex; justify-content:space-around; align-items:center;">
-          <div style="text-align:center;">
-            <div class="push-btn btn-red" id="pb-stop" 
-                 onmousedown="setButtonState('00', true)" onmouseup="setButtonState('00', false)"
-                 ontouchstart="setButtonState('00', true)" ontouchend="setButtonState('00', false)"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-              <div class="terminal" data-id="PB0_T1"></div>
-              <div class="terminal" data-id="PB0_T2"></div>
-            </div>
-            <span style="font-size:10px; font-weight:bold; display:block; margin-top:3px; color:#c0392b;">PB STOP</span>
-          </div>
-
-          <div style="text-align:center;">
-            <div class="push-btn btn-green" id="pb-fwd" 
-                 onmousedown="setButtonState('01', true)" onmouseup="setButtonState('01', false)"
-                 ontouchstart="setButtonState('01', true)" ontouchend="setButtonState('01', false)"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-              <div class="terminal" data-id="PB1_T1"></div>
-              <div class="terminal" data-id="PB1_T2"></div>
-            </div>
-            <span style="font-size:10px; font-weight:bold; display:block; margin-top:3px; color:#27ae60;">PB FWD</span>
-          </div>
-
-          <div style="text-align:center;">
-            <div class="push-btn btn-yellow" id="pb-rev" 
-                 onmousedown="setButtonState('02', true)" onmouseup="setButtonState('02', false)"
-                 ontouchstart="setButtonState('02', true)" ontouchend="setButtonState('02', false)"></div>
-            <div style="display:flex; gap:6px; justify-content:center;">
-              <div class="terminal" data-id="PB2_T1"></div>
-              <div class="terminal" data-id="PB2_T2"></div>
-            </div>
-            <span style="font-size:10px; font-weight:bold; display:block; margin-top:3px; color:#d4ac0d;">PB REV</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- LAMPU INDIKATOR OUTPUT DENGAN LABEL JELAS -->
-      <div class="component" id="lamp-panel">
-        <div style="font-weight:bold; font-size:11px; margin-bottom:6px; text-align:center; color:#2c3e50;">INDIKATOR OUTPUT (AC 220V)</div>
-        <div style="display:flex; justify-content:space-around;">
-          
-          <!-- LAMPU FORWARD -->
-          <div style="text-align:center;">
-            <div class="pilot-lamp lamp-green" id="lamp-fwd"></div>
-            <span style="font-size:10px; font-weight:bold; display:block; color:#27ae60;">LAMPU FWD</span>
-            
-            <div class="lamp-term-container">
-              <div class="lamp-term-col">
-                <span class="lamp-term-badge badge-out">OUT 100.00</span>
-                <div class="terminal" data-id="LP_FWD_L"></div>
-              </div>
-              <div class="lamp-term-col">
-                <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
-                <div class="terminal" data-id="LP_FWD_N"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- LAMPU REVERSE -->
-          <div style="text-align:center;">
-            <div class="pilot-lamp lamp-yellow" id="lamp-rev"></div>
-            <span style="font-size:10px; font-weight:bold; display:block; color:#d4ac0d;">LAMPU REV</span>
-            
-            <div class="lamp-term-container">
-              <div class="lamp-term-col">
-                <span class="lamp-term-badge badge-out-rev">OUT 100.01</span>
-                <div class="terminal" data-id="LP_REV_L"></div>
-              </div>
-              <div class="lamp-term-col">
-                <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
-                <div class="terminal" data-id="LP_REV_N"></div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div id="short-circuit-alert">⚠️ BAHAYA: TERJADI KORSLETING (SHORT CIRCUIT)! MCB TRIP OTOMATIS.</div>
-
-  <div id="diag-modal" onclick="closeDiagnostics(event)">
-    <div class="diag-box" onclick="event.stopPropagation()">
-      <div class="diag-title">
-        <span>📋 Diagnostik & Verifikasi Wiring PLC</span>
-        <button class="btn" style="padding:2px 8px;" onclick="closeDiagnostics()">✕</button>
-      </div>
-      <div id="diag-list"></div>
-      <div style="text-align:right; margin-top:14px;">
-        <button class="btn btn-io" onclick="closeDiagnostics()">Tutup</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    let activeColor = '#e74c3c';
-    let selectedTerminal = null;
-    let wires = [];
-    let isMcbOn = true;
-    let isMcbTripped = false;
-    let isDeleteMode = false;
-    let isAddPointMode = false;
-    let isLiveTrace = false;
-    let buttonStates = { '00': false, '01': false, '02': false };
-    let plcInternalLogic = { fwdLatched: false, revLatched: false };
-    let wireIdCounter = 1;
-    let draggingHandle = null;
-
-    const svgLayer = document.getElementById('wire-layer');
-    const stage = document.getElementById('panzoom-layer');
-    const viewport = document.getElementById('viewport-container');
-
-    let scale = 1;
-    let panX = 0;
-    let panY = 0;
-    let isPanning = false;
-    let lastPanX = 0;
-    let lastPanY = 0;
-
-    let isPinching = false;
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-    let pinchStartMidX = 0;
-    let pinchStartMidY = 0;
-    let pinchStartPanX = 0;
-    let pinchStartPanY = 0;
-
-    function applyTransform(updateWires = false) {
-      stage.style.transform = `translate3d(${panX}px, ${panY}px, 0px) scale(${scale})`;
-      document.getElementById('zoom-label').textContent = Math.round(scale * 100) + '%';
-      if (updateWires) renderAllWires();
-    }
-
-    function zoomIn() {
-      zoomAtPoint(viewport.clientWidth / 2, viewport.clientHeight / 2, 1.2);
-    }
-
-    function zoomOut() {
-      zoomAtPoint(viewport.clientWidth / 2, viewport.clientHeight / 2, 0.83);
-    }
-
-    function zoomAtPoint(screenX, screenY, factor) {
-      const oldScale = scale;
-      const newScale = Math.min(2.8, Math.max(0.35, oldScale * factor));
-      if (newScale === oldScale) return;
-
-      panX = screenX - (screenX - panX) * (newScale / oldScale);
-      panY = screenY - (screenY - panY) * (newScale / oldScale);
-      scale = newScale;
-      applyTransform(true);
-    }
-
-    function resetZoomPan() {
-      const vW = viewport.clientWidth;
-      const vH = viewport.clientHeight;
-      const baseW = 1060;
-      const baseH = 620;
-
-      scale = Math.min(vW / baseW, vH / baseH);
-      if (scale > 1.0) scale = 1.0;
-
-      panX = (vW - baseW * scale) / 2;
-      panY = (vH - baseH * scale) / 2;
-      applyTransform(true);
-    }
-
-    window.addEventListener('resize', resetZoomPan);
-    window.addEventListener('orientationchange', () => setTimeout(resetZoomPan, 250));
-
-    viewport.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.12 : 0.89;
-      const rect = viewport.getBoundingClientRect();
-      zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, factor);
-    }, { passive: false });
-
-    viewport.addEventListener('mousedown', (e) => {
-      if (e.target === viewport || e.target === stage || e.target === svgLayer) {
-        isPanning = true;
-        viewport.classList.add('panning');
-        lastPanX = e.clientX;
-        lastPanY = e.clientY;
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
+    />
+    <title>PLC Wiring Workbench Simulator - Authentic Omron CP1E</title>
+    <style>
+      :root {
+        --bg-panel: #2b2e38;
+        --plc-body: #16181b;
+        --terminal-screw: #d1d8e0;
+        --terminal-hover: #f1c40f;
       }
-    });
-
-    window.addEventListener('mousemove', (e) => {
-      if (isPanning) {
-        panX += (e.clientX - lastPanX);
-        panY += (e.clientY - lastPanY);
-        lastPanX = e.clientX;
-        lastPanY = e.clientY;
-        applyTransform(false);
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        user-select: none;
+        -webkit-user-select: none;
       }
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (isPanning) {
-        isPanning = false;
-        viewport.classList.remove('panning');
-        renderAllWires();
+      body {
+        background: #121315;
+        color: #ecf0f1;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
       }
-    });
 
-    viewport.addEventListener('touchstart', (e) => {
-      if (draggingHandle) return;
+      #toolbar {
+        background: #23272a;
+        padding: 6px 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 2px solid #36393f;
+        z-index: 50;
+        overflow-x: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+        -webkit-overflow-scrolling: touch;
+      }
+      #toolbar::-webkit-scrollbar {
+        height: 3px;
+      }
+      #toolbar::-webkit-scrollbar-thumb {
+        background: #555;
+      }
 
-      if (e.touches.length === 2) {
-        isPinching = true;
-        isPanning = false;
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        pinchStartDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        pinchStartScale = scale;
+      .btn {
+        background: #34495e;
+        color: white;
+        border: 1px solid #4e5d6c;
+        padding: 6px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+        transition: all 0.15s;
+      }
+      .btn:hover {
+        background: #415b76;
+      }
+      .btn-undo {
+        background: #2980b9;
+        border-color: #3498db;
+      }
+      .btn-io {
+        background: #27ae60;
+        border-color: #2ecc71;
+      }
+      .btn-diag {
+        background: #8e44ad;
+        border-color: #9b59b6;
+      }
+      .btn-trace {
+        background: #16a085;
+        border-color: #1abc9c;
+      }
+      .btn-trace.active {
+        background: #1abc9c;
+        border-color: #fff;
+        box-shadow: 0 0 10px rgba(26, 188, 156, 0.8);
+        font-weight: bold;
+      }
+      .btn-mode-addpt {
+        background: #d35400;
+        border-color: #e67e22;
+      }
+      .btn-mode-addpt.active {
+        background: #e67e22;
+        border-color: #fff;
+        box-shadow: 0 0 10px rgba(230, 126, 34, 0.9);
+        font-weight: bold;
+      }
+      .btn-delete-mode {
+        background: #c0392b;
+        border-color: #e74c3c;
+      }
+      .btn-delete-mode.active {
+        background: #ff1744;
+        border-color: #fff;
+        box-shadow: 0 0 10px rgba(255, 23, 68, 0.8);
+      }
 
-        const rect = viewport.getBoundingClientRect();
-        pinchStartMidX = ((t1.clientX + t2.clientX) / 2) - rect.left;
-        pinchStartMidY = ((t1.clientY + t2.clientY) / 2) - rect.top;
-        pinchStartPanX = panX;
-        pinchStartPanY = panY;
-      } else if (e.touches.length === 1 && !isPinching) {
-        if (e.target === viewport || e.target === stage || e.target === svgLayer) {
+      .prog-selector-wrap {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #1a1c1e;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #0984e3;
+        flex-shrink: 0;
+      }
+      .prog-selector {
+        background: #2d3436;
+        color: #00cec9;
+        border: 1px solid #636e72;
+        border-radius: 3px;
+        font-size: 11px;
+        font-weight: bold;
+        padding: 3px 6px;
+        cursor: pointer;
+        outline: none;
+      }
+
+      .zoom-controls {
+        display: inline-flex;
+        align-items: center;
+        background: #1a1c1e;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 2px 4px;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .zoom-btn {
+        background: #2c3e50;
+        color: white;
+        border: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 3px;
+        cursor: pointer;
+        font-weight: bold;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #zoom-label {
+        font-size: 11px;
+        font-family: monospace;
+        min-width: 38px;
+        text-align: center;
+        color: #00e676;
+      }
+
+      .color-picker {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        background: #1e2024;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #36393f;
+        flex-shrink: 0;
+      }
+      .color-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+      .color-dot.active {
+        border-color: white;
+        transform: scale(1.15);
+      }
+
+      #status-bar {
+        margin-left: auto;
+        font-size: 11px;
+        font-family: monospace;
+        color: #00e676;
+        font-weight: bold;
+        flex-shrink: 0;
+        padding-left: 10px;
+      }
+
+      #viewport-container {
+        flex: 1;
+        position: relative;
+        background: #18191c;
+        overflow: hidden;
+        cursor: grab;
+        touch-action: none;
+      }
+      #viewport-container.panning {
+        cursor: grabbing;
+      }
+      #viewport-container.addpt-cursor {
+        cursor: copy !important;
+      }
+      #viewport-container.delete-cursor {
+        cursor: crosshair !important;
+      }
+
+      #panzoom-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1120px;
+        height: 640px;
+        transform-origin: 0 0;
+        background: #e8ecf1;
+        box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+        will-change: transform;
+      }
+
+      svg#wire-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1120px;
+        height: 640px;
+        z-index: 10;
+        pointer-events: none;
+      }
+
+      .wire-hitbox {
+        pointer-events: stroke;
+        stroke: transparent;
+        stroke-width: 24px;
+        fill: none;
+        cursor: pointer;
+      }
+      .wire-visible {
+        pointer-events: none;
+        stroke-width: 4px;
+        fill: none;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition:
+          stroke-width 0.15s,
+          filter 0.15s;
+      }
+      .wire-group:hover .wire-visible {
+        stroke-width: 5px;
+        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
+      }
+      #viewport-container.addpt-cursor .wire-group:hover .wire-visible {
+        stroke: #f39c12 !important;
+        stroke-width: 6px;
+      }
+      #viewport-container.delete-cursor .wire-group:hover .wire-visible {
+        stroke: #ff1744 !important;
+        stroke-width: 6px;
+        stroke-dasharray: 6 3;
+      }
+
+      @keyframes dashMove {
+        from {
+          stroke-dashoffset: 24;
+        }
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      .wire-energized {
+        stroke-dasharray: 8 4 !important;
+        animation: dashMove 0.6s linear infinite !important;
+        filter: drop-shadow(0 0 5px #00e676) !important;
+      }
+      .wire-energized-ac {
+        stroke-dasharray: 8 4 !important;
+        animation: dashMove 0.4s linear infinite !important;
+        filter: drop-shadow(0 0 6px #ff7675) !important;
+      }
+
+      .waypoint-handle {
+        pointer-events: all;
+        cursor: move;
+        fill: #f39c12;
+        stroke: #fff;
+        stroke-width: 2px;
+        transition: r 0.1s;
+      }
+      .waypoint-handle:hover {
+        r: 9;
+        fill: #e67e22;
+      }
+
+      .component {
+        position: absolute;
+        background: white;
+        border: 2px solid #555;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+        z-index: 5;
+      }
+
+      .terminal {
+        width: 20px;
+        height: 20px;
+        background: var(--terminal-screw);
+        border-radius: 50%;
+        border: 2px solid #333;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        position: relative;
+      }
+      .terminal:hover,
+      .terminal.selected {
+        background: var(--terminal-hover);
+        box-shadow: 0 0 8px yellow;
+        transform: scale(1.18);
+      }
+      .terminal::after {
+        content: "";
+        width: 9px;
+        height: 2px;
+        background: #222;
+      }
+      .term-label {
+        font-size: 9.5px;
+        font-family: monospace;
+        font-weight: bold;
+        color: #111;
+        text-align: center;
+        margin-bottom: 2px;
+      }
+
+      #busbar-pln {
+        position: absolute;
+        top: 12px;
+        left: 20px;
+        width: 1080px;
+        height: 46px;
+        background: #ffffff;
+        border: 2px solid #888;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+        padding: 0 20px;
+        z-index: 5;
+      }
+      .bus-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 12px;
+        font-weight: bold;
+        font-family: monospace;
+      }
+
+      #mcb {
+        left: 20px;
+        top: 78px;
+        width: 80px;
+        height: 180px;
+        background: #f4f6f8;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 4px;
+        transition: box-shadow 0.2s;
+      }
+      #mcb.tripped {
+        box-shadow: 0 0 20px #ff1744;
+        border-color: #ff1744;
+      }
+      .mcb-switch {
+        width: 30px;
+        height: 48px;
+        background: #27ae60;
+        border-radius: 4px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 10px;
+        font-weight: bold;
+        border: 2px solid #222;
+        transition: background 0.2s;
+      }
+      .mcb-switch.off {
+        background: #c0392b;
+      }
+      .mcb-switch.tripped-lever {
+        background: #d63031;
+        box-shadow: 0 0 8px red;
+      }
+
+      #psu {
+        left: 110px;
+        top: 78px;
+        width: 210px;
+        height: 180px;
+        background: linear-gradient(135deg, #dcdde1 0%, #bdc3c7 100%);
+        border: 2px solid #7f8c8d;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8px;
+      }
+      .psu-grill {
+        background: repeating-linear-gradient(
+          45deg,
+          #95a5a6,
+          #95a5a6 4px,
+          #bdc3c7 4px,
+          #bdc3c7 8px
+        );
+        height: 55px;
+        border-radius: 4px;
+        border: 1px solid #7f8c8d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .psu-plate {
+        background: #2c3e50;
+        color: #ecf0f1;
+        font-size: 10px;
+        padding: 3px 8px;
+        font-weight: bold;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+      .psu-terminal-block {
+        background: #222629;
+        border: 2px solid #111;
+        border-radius: 4px;
+        padding: 6px 4px;
+        display: flex;
+        justify-content: space-between;
+      }
+      .psu-term-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+      .psu-term-item .term-label {
+        font-size: 9px;
+        font-weight: 800;
+      }
+
+      #plc {
+        left: 330px;
+        top: 78px;
+        width: 440px;
+        height: 530px;
+        background: var(--plc-body);
+        border-color: #111;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 8px;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.85);
+      }
+
+      .terminal-rack {
+        background: #1e2227;
+        border: 1px solid #3b424c;
+        border-radius: 4px;
+        padding: 4px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .terminal-tier {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 4px;
+      }
+      .plc-term-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 32px;
+      }
+      .plc-term-wrap .term-label {
+        color: #f1f2f6;
+        font-size: 8.5px;
+      }
+
+      .plc-mid {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        background: #111316;
+        padding: 8px;
+        border-radius: 4px;
+        border: 1px solid #23272d;
+      }
+      .plc-led-panel {
+        background: #090a0c;
+        padding: 6px 8px;
+        border-radius: 4px;
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        gap: 4px 5px;
+        font-family: monospace;
+        font-size: 7.5px;
+        border: 1px solid #1e2227;
+      }
+      .led {
+        width: 7px;
+        height: 7px;
+        background: #25282e;
+        border-radius: 50%;
+        margin: 0 auto 1px;
+      }
+      .led.active-pwr {
+        background: #00e676;
+        box-shadow: 0 0 5px #00e676;
+      }
+      .led.active-in {
+        background: #ff9800;
+        box-shadow: 0 0 5px #ff9800;
+      }
+      .led.active-out {
+        background: #e91e63;
+        box-shadow: 0 0 5px #e91e63;
+      }
+      .led.active-out-red {
+        background: #ff1744;
+        box-shadow: 0 0 5px #ff1744;
+      }
+
+      .output-section-title {
+        font-size: 8.5px;
+        font-family: monospace;
+        color: #00cec9;
+        background: #0e1012;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-align: center;
+        margin-bottom: 3px;
+        border: 1px solid #2d3436;
+      }
+
+      #buttons-panel {
+        left: 780px;
+        top: 78px;
+        width: 320px;
+        height: 160px;
+        padding: 10px;
+        background: #ecf0f1;
+      }
+      .push-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 3px solid #7f8c8d;
+        cursor: pointer;
+        display: inline-block;
+        margin-bottom: 6px;
+      }
+      .push-btn:active {
+        transform: scale(0.92);
+      }
+      .btn-red {
+        background: #e74c3c;
+      }
+      .btn-green {
+        background: #2ecc71;
+      }
+      .btn-yellow {
+        background: #f1c40f;
+      }
+
+      #lamp-panel {
+        left: 780px;
+        top: 275px;
+        width: 320px;
+        height: 185px;
+        padding: 8px;
+        background: #ecf0f1;
+      }
+      .pilot-lamp {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #555;
+        margin: 0 auto 4px;
+        border: 3px solid #333;
+        transition: 0.2s;
+      }
+      .lamp-red.lit {
+        background: #ff1744;
+        box-shadow: 0 0 20px #ff1744;
+      }
+      .lamp-green.lit {
+        background: #00e676;
+        box-shadow: 0 0 20px #00e676;
+      }
+      .lamp-yellow.lit {
+        background: #ffea00;
+        box-shadow: 0 0 20px #ffea00;
+      }
+
+      .lamp-term-container {
+        background: #dfe4ea;
+        border: 1px dashed #747d8c;
+        border-radius: 5px;
+        padding: 3px 4px;
+        margin-top: 3px;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+      }
+      .lamp-term-col {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1px;
+      }
+      .lamp-term-badge {
+        font-size: 7.5px;
+        font-weight: 800;
+        padding: 1px 3px;
+        border-radius: 3px;
+        letter-spacing: 0.2px;
+      }
+      .badge-out-general {
+        background: #2c3e50;
+        color: #00cec9;
+      }
+      .badge-netral {
+        background: #1e90ff;
+        color: #fff;
+      }
+
+      #diag-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 100;
+        align-items: center;
+        justify-content: center;
+      }
+      .diag-box {
+        background: #23272a;
+        border: 2px solid #4e5d6c;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 550px;
+        padding: 16px;
+        color: #ecf0f1;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      }
+      .diag-title {
+        font-size: 15px;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #36393f;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+      }
+      .diag-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .diag-icon {
+        font-size: 14px;
+        flex-shrink: 0;
+        margin-top: 1px;
+      }
+
+      #short-circuit-alert {
+        display: none;
+        position: fixed;
+        top: 50px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #c0392b;
+        color: #fff;
+        border: 2px solid #fff;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: bold;
+        font-size: 13px;
+        z-index: 110;
+        box-shadow: 0 0 25px #ff1744;
+        animation: blinkAlert 0.4s infinite alternate;
+      }
+      @keyframes blinkAlert {
+        from {
+          opacity: 0.85;
+          transform: translateX(-50%) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) scale(1.02);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <span style="font-size: 12px; font-weight: bold; color: #ecf0f1"
+        >PLC Workbench</span
+      >
+
+      <div class="prog-selector-wrap">
+        <span style="font-size: 10px; font-weight: bold; color: #74b9ff"
+          >PROGRAM CX-P:</span
+        >
+        <select
+          class="prog-selector"
+          id="program-select"
+          onchange="changePLCProgram()"
+        >
+          <option value="FWD_REV">
+            1. Rangkaian Forward - Reverse (Standby Red)
+          </option>
+          <option value="DOL">
+            2. Rangkaian DOL Start - Stop (Standby Red)
+          </option>
+          <option value="JOGGING">
+            3. Rangkaian Inching / Jogging (Standby Red)
+          </option>
+        </select>
+      </div>
+
+      <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()" title="Perbesar">+</button>
+        <span id="zoom-label">100%</span>
+        <button class="zoom-btn" onclick="zoomOut()" title="Perkecil">-</button>
+        <button
+          class="btn"
+          style="padding: 2px 6px; font-size: 10px"
+          onclick="resetZoomPan()"
+        >
+          Fit
+        </button>
+      </div>
+
+      <button class="btn btn-diag" onclick="openDiagnostics()">
+        🔍 Periksa Rangkaian
+      </button>
+      <button class="btn btn-trace" id="btn-trace" onclick="toggleLiveTrace()">
+        ⚡ Live Trace Arus
+      </button>
+      <button
+        class="btn btn-mode-addpt"
+        id="btn-addpt"
+        onclick="toggleAddPointMode()"
+      >
+        📍 Alat Tambah Titik
+      </button>
+      <button
+        class="btn btn-delete-mode"
+        id="btn-delete"
+        onclick="toggleDeleteMode()"
+      >
+        ✂ Mode Hapus
+      </button>
+      <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
+      <button class="btn" onclick="clearAllWires()">Reset</button>
+      <button class="btn btn-io" onclick="saveWiring()">💾 Simpan</button>
+      <button
+        class="btn btn-io"
+        onclick="document.getElementById('load-input').click()"
+      >
+        📂 Buka
+      </button>
+      <input
+        type="file"
+        id="load-input"
+        style="display: none"
+        accept=".json"
+        onchange="loadWiring(event)"
+      />
+
+      <div class="color-picker">
+        <div
+          class="color-dot active"
+          style="background: #e74c3c"
+          onclick="setColor('#e74c3c', this)"
+        ></div>
+        <div
+          class="color-dot"
+          style="background: #2980b9"
+          onclick="setColor('#2980b9', this)"
+        ></div>
+        <div
+          class="color-dot"
+          style="background: #27ae60"
+          onclick="setColor('#27ae60', this)"
+        ></div>
+        <div
+          class="color-dot"
+          style="background: #f39c12"
+          onclick="setColor('#f39c12', this)"
+        ></div>
+        <div
+          class="color-dot"
+          style="background: #111111"
+          onclick="setColor('#111111', this)"
+        ></div>
+      </div>
+
+      <div id="status-bar">STATUS: RUNNING</div>
+    </div>
+
+    <div id="viewport-container">
+      <div id="panzoom-layer">
+        <svg id="wire-layer"></svg>
+
+        <!-- Sumber PLN 220V AC -->
+        <div id="busbar-pln">
+          <div class="bus-line" style="color: #d35400">
+            <span>SUMBER PLN [L] (Fasa 220V AC):</span>
+            <div class="terminal" data-id="PLN_LINE"></div>
+          </div>
+          <div class="bus-line" style="color: #2980b9">
+            <span>SUMBER PLN [N] (Netral AC):</span>
+            <div class="terminal" data-id="PLN_NEUTRAL"></div>
+          </div>
+        </div>
+
+        <!-- MCB 1 FASA -->
+        <div class="component" id="mcb">
+          <div class="term-label">MCB IN</div>
+          <div class="terminal" data-id="MCB_IN"></div>
+
+          <div style="text-align: center">
+            <div class="mcb-switch" id="mcb-toggle" onclick="toggleMCB()">
+              ON
+            </div>
+            <div style="font-size: 9px; font-weight: bold; margin-top: 2px">
+              1P 6A
+            </div>
+          </div>
+
+          <div class="term-label">MCB OUT</div>
+          <div class="terminal" data-id="MCB_OUT"></div>
+        </div>
+
+        <!-- POWER SUPPLY 24V DC -->
+        <div class="component" id="psu">
+          <div class="psu-grill">
+            <div class="psu-plate">POWER SUPPLY 24V DC</div>
+          </div>
+
+          <div class="psu-terminal-block">
+            <div class="psu-term-item">
+              <div class="term-label" style="color: #ff7675">L (AC)</div>
+              <div class="terminal" data-id="PSU_AC_L"></div>
+              <span style="font-size: 7px; color: #aaa">Fasa</span>
+            </div>
+            <div class="psu-term-item">
+              <div class="term-label" style="color: #74b9ff">N (AC)</div>
+              <div class="terminal" data-id="PSU_AC_N"></div>
+              <span style="font-size: 7px; color: #aaa">Netral</span>
+            </div>
+            <div class="psu-term-item">
+              <div class="term-label" style="color: #fab1a0">-V (0V)</div>
+              <div class="terminal" data-id="PSU_-V"></div>
+              <span style="font-size: 7px; color: #aaa">0V DC</span>
+            </div>
+            <div class="psu-term-item">
+              <div class="term-label" style="color: #ff3838">+V (24V)</div>
+              <div class="terminal" data-id="PSU_+V"></div>
+              <span style="font-size: 7px; color: #aaa">+24V</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- OMRON SYSMAC CP1E -->
+        <div class="component" id="plc">
+          <div class="terminal-rack">
+            <div
+              style="
+                font-size: 8px;
+                font-family: monospace;
+                color: #888;
+                text-align: center;
+              "
+            >
+              INPUT TERMINALS (CH 00)
+            </div>
+            <!-- Baris 1 Input -->
+            <div class="terminal-tier">
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #ff7675">L1</div>
+                <div class="terminal" data-id="PLC_L1"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #74b9ff">L2/N</div>
+                <div class="terminal" data-id="PLC_L2N"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #fdcb6e">COM</div>
+                <div class="terminal" data-id="PLC_IN_COM"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">01</div>
+                <div class="terminal" data-id="PLC_IN_01"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">03</div>
+                <div class="terminal" data-id="PLC_IN_03"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">05</div>
+                <div class="terminal" data-id="PLC_IN_05"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">07</div>
+                <div class="terminal" data-id="PLC_IN_07"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">09</div>
+                <div class="terminal" data-id="PLC_IN_09"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">11</div>
+                <div class="terminal" data-id="PLC_IN_11"></div>
+              </div>
+            </div>
+            <!-- Baris 2 Input -->
+            <div
+              class="terminal-tier"
+              style="justify-content: flex-start; gap: 14px; padding-left: 55px"
+            >
+              <div class="plc-term-wrap">
+                <div class="term-label">00</div>
+                <div class="terminal" data-id="PLC_IN_00"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">02</div>
+                <div class="terminal" data-id="PLC_IN_02"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">04</div>
+                <div class="terminal" data-id="PLC_IN_04"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">06</div>
+                <div class="terminal" data-id="PLC_IN_06"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">08</div>
+                <div class="terminal" data-id="PLC_IN_08"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">10</div>
+                <div class="terminal" data-id="PLC_IN_10"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bagian Tengah Bodi & LED Display -->
+          <div class="plc-mid">
+            <div
+              style="
+                font-weight: bold;
+                font-size: 12px;
+                letter-spacing: 1px;
+                color: #ecf0f1;
+              "
+            >
+              OMRON SYSMAC CP1E
+            </div>
+            <div class="plc-led-panel">
+              <div style="text-align: center">
+                <div class="led" id="led-pwr"></div>
+                PWR
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-00"></div>
+                00
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-01"></div>
+                01
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-02"></div>
+                02
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-03"></div>
+                03
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-04"></div>
+                04
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-05"></div>
+                05
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-06"></div>
+                06
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-07"></div>
+                07
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-08"></div>
+                08
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-09"></div>
+                09
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-in-10"></div>
+                10
+              </div>
+            </div>
+            <div
+              class="plc-led-panel"
+              style="grid-template-columns: repeat(8, 1fr); width: 85%"
+            >
+              <div style="text-align: center">
+                <div class="led" id="led-out-00"></div>
+                100.00
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-01"></div>
+                100.01
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-02"></div>
+                100.02
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-03"></div>
+                100.03
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-04"></div>
+                100.04
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-05"></div>
+                100.05
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-06"></div>
+                100.06
+              </div>
+              <div style="text-align: center">
+                <div class="led" id="led-out-07"></div>
+                100.07
+              </div>
+            </div>
+          </div>
+
+          <!-- RAK TERMINAL OUTPUT BERTINGKAT -->
+          <div class="terminal-rack">
+            <div class="output-section-title">
+              OUTPUT RELAY CONTACTS (CH 100: 00 - 07)
+            </div>
+
+            <!-- Baris Atas Terminal Output -->
+            <div class="terminal-tier">
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #ff7675">00</div>
+                <div class="terminal" data-id="PLC_OUT_00"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #55efc4">01</div>
+                <div class="terminal" data-id="PLC_OUT_01"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #ffeaa7">02</div>
+                <div class="terminal" data-id="PLC_OUT_02"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">04</div>
+                <div class="terminal" data-id="PLC_OUT_04"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">05</div>
+                <div class="terminal" data-id="PLC_OUT_05"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">07</div>
+                <div class="terminal" data-id="PLC_OUT_07"></div>
+              </div>
+            </div>
+
+            <!-- Baris Bawah Terminal Output -->
+            <div class="terminal-tier">
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #fab1a0">COM0</div>
+                <div
+                  class="terminal"
+                  data-id="PLC_OUT_COM0"
+                  title="Independent COM untuk 100.00"
+                ></div>
+                <span style="font-size: 7px; color: #888">(00)</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #fab1a0">COM1</div>
+                <div
+                  class="terminal"
+                  data-id="PLC_OUT_COM1"
+                  title="Independent COM untuk 100.01"
+                ></div>
+                <span style="font-size: 7px; color: #888">(01)</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #fab1a0">COM2</div>
+                <div
+                  class="terminal"
+                  data-id="PLC_OUT_COM2"
+                  title="Shared COM untuk 100.02 & 100.03"
+                ></div>
+                <span style="font-size: 7px; color: #f39c12">(02/03)</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">03</div>
+                <div class="terminal" data-id="PLC_OUT_03"></div>
+                <span style="font-size: 7px; color: #888">100.03</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #fab1a0">COM3</div>
+                <div
+                  class="terminal"
+                  data-id="PLC_OUT_COM3"
+                  title="Shared COM untuk 100.04 s/d 100.07"
+                ></div>
+                <span style="font-size: 7px; color: #0984e3">(04-07)</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">06</div>
+                <div class="terminal" data-id="PLC_OUT_06"></div>
+                <span style="font-size: 7px; color: #888">100.06</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PUSH BUTTON INPUTS -->
+        <div class="component" id="buttons-panel">
+          <div
+            style="
+              font-weight: bold;
+              font-size: 11px;
+              margin-bottom: 8px;
+              text-align: center;
+              color: #2c3e50;
+            "
+          >
+            PUSH BUTTON (DC)
+          </div>
+          <div
+            style="
+              display: flex;
+              justify-content: space-around;
+              align-items: center;
+            "
+          >
+            <div style="text-align: center">
+              <div
+                class="push-btn btn-red"
+                id="pb-stop"
+                onmousedown="setButtonState('00', true)"
+                onmouseup="setButtonState('00', false)"
+                ontouchstart="setButtonState('00', true)"
+                ontouchend="setButtonState('00', false)"
+              ></div>
+              <div style="display: flex; gap: 6px; justify-content: center">
+                <div class="terminal" data-id="PB0_T1"></div>
+                <div class="terminal" data-id="PB0_T2"></div>
+              </div>
+              <span
+                style="
+                  font-size: 10px;
+                  font-weight: bold;
+                  display: block;
+                  margin-top: 3px;
+                  color: #c0392b;
+                "
+                id="lbl-btn-00"
+                >PB STOP</span
+              >
+            </div>
+
+            <div style="text-align: center">
+              <div
+                class="push-btn btn-green"
+                id="pb-fwd"
+                onmousedown="setButtonState('01', true)"
+                onmouseup="setButtonState('01', false)"
+                ontouchstart="setButtonState('01', true)"
+                ontouchend="setButtonState('01', false)"
+              ></div>
+              <div style="display: flex; gap: 6px; justify-content: center">
+                <div class="terminal" data-id="PB1_T1"></div>
+                <div class="terminal" data-id="PB1_T2"></div>
+              </div>
+              <span
+                style="
+                  font-size: 10px;
+                  font-weight: bold;
+                  display: block;
+                  margin-top: 3px;
+                  color: #27ae60;
+                "
+                id="lbl-btn-01"
+                >PB START FWD</span
+              >
+            </div>
+
+            <div style="text-align: center">
+              <div
+                class="push-btn btn-yellow"
+                id="pb-rev"
+                onmousedown="setButtonState('02', true)"
+                onmouseup="setButtonState('02', false)"
+                ontouchstart="setButtonState('02', true)"
+                ontouchend="setButtonState('02', false)"
+              ></div>
+              <div style="display: flex; gap: 6px; justify-content: center">
+                <div class="terminal" data-id="PB2_T1"></div>
+                <div class="terminal" data-id="PB2_T2"></div>
+              </div>
+              <span
+                style="
+                  font-size: 10px;
+                  font-weight: bold;
+                  display: block;
+                  margin-top: 3px;
+                  color: #d4ac0d;
+                "
+                id="lbl-btn-02"
+                >PB START REV</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- PANEL 3 LAMPU -->
+        <div class="component" id="lamp-panel">
+          <div
+            style="
+              font-weight: bold;
+              font-size: 11px;
+              margin-bottom: 4px;
+              text-align: center;
+              color: #2c3e50;
+            "
+          >
+            INDIKATOR OUTPUT (AC 220V)
+          </div>
+          <div style="display: flex; justify-content: space-around">
+            <!-- LAMPU MERAH -->
+            <div style="text-align: center">
+              <div class="pilot-lamp lamp-red" id="lamp-standby"></div>
+              <span
+                style="
+                  font-size: 9.5px;
+                  font-weight: bold;
+                  display: block;
+                  color: #ff4757;
+                "
+                id="lbl-lamp-standby"
+                >STANDBY (OFF)</span
+              >
+
+              <div class="lamp-term-container">
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-out-general">OUTPUT</span>
+                  <div class="terminal" data-id="LP_SBY_L"></div>
+                </div>
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
+                  <div class="terminal" data-id="LP_SBY_N"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- LAMPU HIJAU -->
+            <div style="text-align: center">
+              <div class="pilot-lamp lamp-green" id="lamp-fwd"></div>
+              <span
+                style="
+                  font-size: 9.5px;
+                  font-weight: bold;
+                  display: block;
+                  color: #27ae60;
+                "
+                id="lbl-lamp-01"
+                >RUN FWD</span
+              >
+
+              <div class="lamp-term-container">
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-out-general">OUTPUT</span>
+                  <div class="terminal" data-id="LP_FWD_L"></div>
+                </div>
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
+                  <div class="terminal" data-id="LP_FWD_N"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- LAMPU KUNING -->
+            <div style="text-align: center">
+              <div class="pilot-lamp lamp-yellow" id="lamp-rev"></div>
+              <span
+                style="
+                  font-size: 9.5px;
+                  font-weight: bold;
+                  display: block;
+                  color: #d4ac0d;
+                "
+                id="lbl-lamp-02"
+                >RUN REV</span
+              >
+
+              <div class="lamp-term-container">
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-out-general">OUTPUT</span>
+                  <div class="terminal" data-id="LP_REV_L"></div>
+                </div>
+                <div class="lamp-term-col">
+                  <span class="lamp-term-badge badge-netral">NETRAL (N)</span>
+                  <div class="terminal" data-id="LP_REV_N"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="short-circuit-alert">
+      ⚠️ BAHAYA: TERJADI KORSLETING (SHORT CIRCUIT)! MCB TRIP OTOMATIS.
+    </div>
+
+    <div id="diag-modal" onclick="closeDiagnostics(event)">
+      <div class="diag-box" onclick="event.stopPropagation()">
+        <div class="diag-title">
+          <span>📋 Diagnostik & Verifikasi Wiring PLC (Omron CP1E)</span>
+          <button
+            class="btn"
+            style="padding: 2px 8px"
+            onclick="closeDiagnostics()"
+          >
+            ✕
+          </button>
+        </div>
+        <div id="diag-list"></div>
+        <div style="text-align: right; margin-top: 14px">
+          <button class="btn btn-io" onclick="closeDiagnostics()">Tutup</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let activeColor = "#e74c3c";
+      let selectedTerminal = null;
+      let wires = [];
+      let isMcbOn = true;
+      let isMcbTripped = false;
+      let isDeleteMode = false;
+      let isAddPointMode = false;
+      let isLiveTrace = false;
+      let buttonStates = { "00": false, "01": false, "02": false };
+
+      let currentProgram = "FWD_REV";
+      let plcInternalLogic = {
+        fwdLatched: false,
+        revLatched: false,
+        dolLatched: false,
+      };
+      let wireIdCounter = 1;
+      let draggingHandle = null;
+
+      const svgLayer = document.getElementById("wire-layer");
+      const stage = document.getElementById("panzoom-layer");
+      const viewport = document.getElementById("viewport-container");
+
+      let scale = 1;
+      let panX = 0;
+      let panY = 0;
+      let isPanning = false;
+      let lastPanX = 0;
+      let lastPanY = 0;
+
+      let isPinching = false;
+      let pinchStartDist = 0;
+      let pinchStartScale = 1;
+      let pinchStartMidX = 0;
+      let pinchStartMidY = 0;
+      let pinchStartPanX = 0;
+      let pinchStartPanY = 0;
+
+      function changePLCProgram() {
+        currentProgram = document.getElementById("program-select").value;
+        plcInternalLogic.fwdLatched = false;
+        plcInternalLogic.revLatched = false;
+        plcInternalLogic.dolLatched = false;
+
+        const lbl00 = document.getElementById("lbl-btn-00");
+        const lbl01 = document.getElementById("lbl-btn-01");
+        const lbl02 = document.getElementById("lbl-btn-02");
+        const lamp01 = document.getElementById("lbl-lamp-01");
+        const lamp02 = document.getElementById("lbl-lamp-02");
+
+        if (currentProgram === "FWD_REV") {
+          lbl00.textContent = "PB STOP";
+          lbl01.textContent = "PB START FWD";
+          lbl02.textContent = "PB START REV";
+          lamp01.textContent = "RUN FWD";
+          lamp02.textContent = "RUN REV";
+        } else if (currentProgram === "DOL") {
+          lbl00.textContent = "PB STOP";
+          lbl01.textContent = "PB START";
+          lbl02.textContent = "(TAK DIPAKAI)";
+          lamp01.textContent = "MOTOR JALAN";
+          lamp02.textContent = "(TAK DIPAKAI)";
+        } else if (currentProgram === "JOGGING") {
+          lbl00.textContent = "(TAK DIPAKAI)";
+          lbl01.textContent = "JOG FWD";
+          lbl02.textContent = "JOG REV";
+          lamp01.textContent = "JOG FWD ACTIVE";
+          lamp02.textContent = "JOG REV ACTIVE";
+        }
+
+        evaluateCircuit();
+      }
+
+      function applyTransform(updateWires = false) {
+        stage.style.transform = `translate3d(${panX}px, ${panY}px, 0px) scale(${scale})`;
+        document.getElementById("zoom-label").textContent =
+          Math.round(scale * 100) + "%";
+        if (updateWires) renderAllWires();
+      }
+
+      function zoomIn() {
+        zoomAtPoint(viewport.clientWidth / 2, viewport.clientHeight / 2, 1.2);
+      }
+      function zoomOut() {
+        zoomAtPoint(viewport.clientWidth / 2, viewport.clientHeight / 2, 0.83);
+      }
+
+      function zoomAtPoint(screenX, screenY, factor) {
+        const oldScale = scale;
+        const newScale = Math.min(2.8, Math.max(0.35, oldScale * factor));
+        if (newScale === oldScale) return;
+        panX = screenX - (screenX - panX) * (newScale / oldScale);
+        panY = screenY - (screenY - panY) * (newScale / oldScale);
+        scale = newScale;
+        applyTransform(true);
+      }
+
+      function resetZoomPan() {
+        const vW = viewport.clientWidth;
+        const vH = viewport.clientHeight;
+        const baseW = 1120;
+        const baseH = 640;
+        scale = Math.min(vW / baseW, vH / baseH);
+        if (scale > 1.0) scale = 1.0;
+        panX = (vW - baseW * scale) / 2;
+        panY = (vH - baseH * scale) / 2;
+        applyTransform(true);
+      }
+
+      window.addEventListener("resize", resetZoomPan);
+      window.addEventListener("orientationchange", () =>
+        setTimeout(resetZoomPan, 250),
+      );
+
+      viewport.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.12 : 0.89;
+          const rect = viewport.getBoundingClientRect();
+          zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, factor);
+        },
+        { passive: false },
+      );
+
+      viewport.addEventListener("mousedown", (e) => {
+        if (
+          e.target === viewport ||
+          e.target === stage ||
+          e.target === svgLayer
+        ) {
+          isPanning = true;
+          viewport.classList.add("panning");
+          lastPanX = e.clientX;
+          lastPanY = e.clientY;
+        }
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (isPanning) {
+          panX += e.clientX - lastPanX;
+          panY += e.clientY - lastPanY;
+          lastPanX = e.clientX;
+          lastPanY = e.clientY;
+          applyTransform(false);
+        }
+      });
+
+      window.addEventListener("mouseup", () => {
+        if (isPanning) {
+          isPanning = false;
+          viewport.classList.remove("panning");
+          renderAllWires();
+        }
+      });
+
+      viewport.addEventListener(
+        "touchstart",
+        (e) => {
+          if (draggingHandle) return;
+          if (e.touches.length === 2) {
+            isPinching = true;
+            isPanning = false;
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            pinchStartDist = Math.hypot(
+              t2.clientX - t1.clientX,
+              t2.clientY - t1.clientY,
+            );
+            pinchStartScale = scale;
+            const rect = viewport.getBoundingClientRect();
+            pinchStartMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            pinchStartMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+            pinchStartPanX = panX;
+            pinchStartPanY = panY;
+          } else if (e.touches.length === 1 && !isPinching) {
+            if (
+              e.target === viewport ||
+              e.target === stage ||
+              e.target === svgLayer
+            ) {
+              isPanning = true;
+              lastPanX = e.touches[0].clientX;
+              lastPanY = e.touches[0].clientY;
+            }
+          }
+        },
+        { passive: false },
+      );
+
+      viewport.addEventListener(
+        "touchmove",
+        (e) => {
+          if (draggingHandle) return;
+          if (e.touches.length === 2 && isPinching && pinchStartDist > 0) {
+            e.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const currentDist = Math.hypot(
+              t2.clientX - t1.clientX,
+              t2.clientY - t1.clientY,
+            );
+            const factor = currentDist / pinchStartDist;
+            const newScale = Math.min(
+              2.8,
+              Math.max(0.35, pinchStartScale * factor),
+            );
+            const rect = viewport.getBoundingClientRect();
+            const currentMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            const currentMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+            panX =
+              currentMidX -
+              (pinchStartMidX - pinchStartPanX) * (newScale / pinchStartScale);
+            panY =
+              currentMidY -
+              (pinchStartMidY - pinchStartPanY) * (newScale / pinchStartScale);
+            scale = newScale;
+            applyTransform(false);
+          } else if (e.touches.length === 1 && isPanning && !isPinching) {
+            e.preventDefault();
+            const clientX = e.touches[0].clientX;
+            const clientY = e.touches[0].clientY;
+            panX += clientX - lastPanX;
+            panY += clientY - lastPanY;
+            lastPanX = clientX;
+            lastPanY = clientY;
+            applyTransform(false);
+          }
+        },
+        { passive: false },
+      );
+
+      viewport.addEventListener("touchend", (e) => {
+        if (e.touches.length < 2) isPinching = false;
+        if (e.touches.length === 1) {
           isPanning = true;
           lastPanX = e.touches[0].clientX;
           lastPanY = e.touches[0].clientY;
         }
+        if (e.touches.length === 0) {
+          isPanning = false;
+          renderAllWires();
+        }
+      });
+
+      function setColor(hex, el) {
+        activeColor = hex;
+        document
+          .querySelectorAll(".color-dot")
+          .forEach((d) => d.classList.remove("active"));
+        el.classList.add("active");
       }
-    }, { passive: false });
 
-    viewport.addEventListener('touchmove', (e) => {
-      if (draggingHandle) return;
-
-      if (e.touches.length === 2 && isPinching && pinchStartDist > 0) {
-        e.preventDefault();
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        const factor = currentDist / pinchStartDist;
-        const newScale = Math.min(2.8, Math.max(0.35, pinchStartScale * factor));
-        
-        const rect = viewport.getBoundingClientRect();
-        const currentMidX = ((t1.clientX + t2.clientX) / 2) - rect.left;
-        const currentMidY = ((t1.clientY + t2.clientY) / 2) - rect.top;
-
-        panX = currentMidX - (pinchStartMidX - pinchStartPanX) * (newScale / pinchStartScale);
-        panY = currentMidY - (pinchStartMidY - pinchStartPanY) * (newScale / pinchStartScale);
-        scale = newScale;
-        applyTransform(false);
-      } else if (e.touches.length === 1 && isPanning && !isPinching) {
-        e.preventDefault();
-        const clientX = e.touches[0].clientX;
-        const clientY = e.touches[0].clientY;
-        panX += (clientX - lastPanX);
-        panY += (clientY - lastPanY);
-        lastPanX = clientX;
-        lastPanY = clientY;
-        applyTransform(false);
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchend', (e) => {
-      if (e.touches.length < 2) isPinching = false;
-      if (e.touches.length === 1) {
-        isPanning = true;
-        lastPanX = e.touches[0].clientX;
-        lastPanY = e.touches[0].clientY;
-      }
-      if (e.touches.length === 0) {
-        isPanning = false;
-        renderAllWires();
-      }
-    });
-
-    function setColor(hex, el) {
-      activeColor = hex;
-      document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
-      el.classList.add('active');
-    }
-
-    function toggleLiveTrace() {
-      isLiveTrace = !isLiveTrace;
-      const btn = document.getElementById('btn-trace');
-      btn.classList.toggle('active', isLiveTrace);
-      evaluateCircuit();
-    }
-
-    function toggleAddPointMode() {
-      isAddPointMode = !isAddPointMode;
-      if (isAddPointMode && isDeleteMode) toggleDeleteMode();
-
-      const btn = document.getElementById('btn-addpt');
-      const stat = document.getElementById('status-bar');
-      if (isAddPointMode) {
-        btn.classList.add('active');
-        btn.textContent = '✖ Selesai Tambah Titik';
-        viewport.classList.add('addpt-cursor');
-        stat.textContent = 'ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok';
-        stat.style.color = '#f39c12';
-      } else {
-        btn.classList.remove('active');
-        btn.textContent = '📍 Alat Tambah Titik';
-        viewport.classList.remove('addpt-cursor');
+      function toggleLiveTrace() {
+        isLiveTrace = !isLiveTrace;
+        document
+          .getElementById("btn-trace")
+          .classList.toggle("active", isLiveTrace);
         evaluateCircuit();
       }
-    }
 
-    function toggleDeleteMode() {
-      isDeleteMode = !isDeleteMode;
-      if (isDeleteMode && isAddPointMode) toggleAddPointMode();
-
-      const btn = document.getElementById('btn-delete');
-      const stat = document.getElementById('status-bar');
-      if (isDeleteMode) {
-        btn.classList.add('active');
-        btn.textContent = '✖ Selesai Hapus';
-        viewport.classList.add('delete-cursor');
-        stat.textContent = 'KLIK KABEL UNTUK HAPUS';
-        stat.style.color = '#ff1744';
-      } else {
-        btn.classList.remove('active');
-        btn.textContent = '✂ Mode Hapus';
-        viewport.classList.remove('delete-cursor');
-        evaluateCircuit();
-      }
-    }
-
-    function toggleMCB() {
-      if (isMcbTripped) {
-        isMcbTripped = false;
-        isMcbOn = false;
-        document.getElementById('mcb').classList.remove('tripped');
-        document.getElementById('short-circuit-alert').style.display = 'none';
-        const sw = document.getElementById('mcb-toggle');
-        sw.className = 'mcb-switch off';
-        sw.textContent = 'OFF';
-        evaluateCircuit();
-        return;
-      }
-
-      isMcbOn = !isMcbOn;
-      const sw = document.getElementById('mcb-toggle');
-      if (isMcbOn) {
-        sw.className = 'mcb-switch';
-        sw.textContent = 'ON';
-      } else {
-        sw.className = 'mcb-switch off';
-        sw.textContent = 'OFF';
-      }
-      evaluateCircuit();
-    }
-
-    function triggerShortCircuit(reason) {
-      if (isMcbTripped) return;
-      isMcbTripped = true;
-      isMcbOn = false;
-
-      const mcbEl = document.getElementById('mcb');
-      mcbEl.classList.add('tripped');
-
-      const sw = document.getElementById('mcb-toggle');
-      sw.className = 'mcb-switch tripped-lever';
-      sw.textContent = 'TRIP';
-
-      const alertBanner = document.getElementById('short-circuit-alert');
-      alertBanner.textContent = `⚠️ KORSLETING (${reason})! MCB TRIP OTOMATIS UNTUK PROTEKSI.`;
-      alertBanner.style.display = 'block';
-
-      const stat = document.getElementById('status-bar');
-      stat.textContent = 'KORSLETING TERDETEKSI: MCB TRIP!';
-      stat.style.color = '#ff1744';
-    }
-
-    function getTerminalCenter(el) {
-      const stageRect = stage.getBoundingClientRect();
-      const elRect = el.getBoundingClientRect();
-      return {
-        x: (elRect.left + elRect.width / 2 - stageRect.left) / scale,
-        y: (elRect.top + elRect.height / 2 - stageRect.top) / scale
-      };
-    }
-
-    document.querySelectorAll('.terminal').forEach(term => {
-      term.addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (isDeleteMode || isAddPointMode) return;
-        if (!selectedTerminal) {
-          selectedTerminal = term;
-          term.classList.add('selected');
-        } else if (selectedTerminal === term) {
-          selectedTerminal.classList.remove('selected');
-          selectedTerminal = null;
+      function toggleAddPointMode() {
+        isAddPointMode = !isAddPointMode;
+        if (isAddPointMode && isDeleteMode) toggleDeleteMode();
+        const btn = document.getElementById("btn-addpt");
+        const stat = document.getElementById("status-bar");
+        if (isAddPointMode) {
+          btn.classList.add("active");
+          btn.textContent = "✖ Selesai Tambah Titik";
+          viewport.classList.add("addpt-cursor");
+          stat.textContent =
+            "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
+          stat.style.color = "#f39c12";
         } else {
-          addWire(selectedTerminal, term, activeColor);
-          selectedTerminal.classList.remove('selected');
-          selectedTerminal = null;
+          btn.classList.remove("active");
+          btn.textContent = "📍 Alat Tambah Titik";
+          viewport.classList.remove("addpt-cursor");
           evaluateCircuit();
         }
-      });
-    });
+      }
 
-    function addWire(termA, termB, color, existingPoints = null) {
-      const fromId = termA.getAttribute('data-id');
-      const toId = termB.getAttribute('data-id');
-
-      if (!existingPoints && wires.some(w => (w.from === fromId && w.to === toId) || (w.from === toId && w.to === fromId))) return;
-
-      const wireId = 'wire_' + (wireIdCounter++);
-      const pA = getTerminalCenter(termA);
-      const pB = getTerminalCenter(termB);
-      let points = existingPoints || [
-        { x: (pA.x + pB.x) / 2, y: Math.max(pA.y, pB.y) + 30 }
-      ];
-
-      const groupEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-      groupEl.setAttribute('class', 'wire-group');
-
-      const pathHitbox = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      pathHitbox.setAttribute('class', 'wire-hitbox');
-
-      const pathVisible = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      pathVisible.setAttribute('stroke', color);
-      pathVisible.setAttribute('class', 'wire-visible');
-
-      const handleGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-
-      const onWireTap = (e) => {
-        e.stopPropagation();
+      function toggleDeleteMode() {
+        isDeleteMode = !isDeleteMode;
+        if (isDeleteMode && isAddPointMode) toggleAddPointMode();
+        const btn = document.getElementById("btn-delete");
+        const stat = document.getElementById("status-bar");
         if (isDeleteMode) {
-          deleteWireById(wireId);
-        } else if (isAddPointMode) {
-          const stageRect = stage.getBoundingClientRect();
-          const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-          const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-          const clickX = (clientX - stageRect.left) / scale;
-          const clickY = (clientY - stageRect.top) / scale;
-          insertWaypoint(wireId, clickX, clickY);
+          btn.classList.add("active");
+          btn.textContent = "✖ Selesai Hapus";
+          viewport.classList.add("delete-cursor");
+          stat.textContent = "KLIK KABEL UNTUK HAPUS";
+          stat.style.color = "#ff1744";
+        } else {
+          btn.classList.remove("active");
+          btn.textContent = "✂ Mode Hapus";
+          viewport.classList.remove("delete-cursor");
+          evaluateCircuit();
         }
-      };
+      }
 
-      pathHitbox.addEventListener('click', onWireTap);
-      pathHitbox.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        deleteWireById(wireId);
-      });
-
-      groupEl.appendChild(pathHitbox);
-      groupEl.appendChild(pathVisible);
-      groupEl.appendChild(handleGroup);
-      svgLayer.appendChild(groupEl);
-
-      const wireObj = {
-        id: wireId,
-        from: fromId,
-        to: toId,
-        color: color,
-        points: points,
-        groupEl: groupEl,
-        pathVisible: pathVisible,
-        pathHitbox: pathHitbox,
-        handleGroup: handleGroup
-      };
-
-      wires.push(wireObj);
-      renderWire(wireObj);
-    }
-
-    function deleteWireById(wireId) {
-      const idx = wires.findIndex(w => w.id === wireId);
-      if (idx !== -1) {
-        wires[idx].groupEl.remove();
-        wires.splice(idx, 1);
+      function toggleMCB() {
+        if (isMcbTripped) {
+          isMcbTripped = false;
+          isMcbOn = false;
+          document.getElementById("mcb").classList.remove("tripped");
+          document.getElementById("short-circuit-alert").style.display = "none";
+          const sw = document.getElementById("mcb-toggle");
+          sw.className = "mcb-switch off";
+          sw.textContent = "OFF";
+          evaluateCircuit();
+          return;
+        }
+        isMcbOn = !isMcbOn;
+        const sw = document.getElementById("mcb-toggle");
+        if (isMcbOn) {
+          sw.className = "mcb-switch";
+          sw.textContent = "ON";
+        } else {
+          sw.className = "mcb-switch off";
+          sw.textContent = "OFF";
+        }
         evaluateCircuit();
       }
-    }
 
-    function insertWaypoint(wireId, x, y) {
-      const wire = wires.find(w => w.id === wireId);
-      if (!wire) return;
-      wire.points.push({ x: Math.round(x), y: Math.round(y) });
-      renderWire(wire);
-    }
-
-    function renderWire(wire) {
-      const elA = document.querySelector(`[data-id="${wire.from}"]`);
-      const elB = document.querySelector(`[data-id="${wire.to}"]`);
-      if (!elA || !elB) return;
-
-      const start = getTerminalCenter(elA);
-      const end = getTerminalCenter(elB);
-      const allCoords = [start, ...wire.points, end];
-
-      let d = `M ${allCoords[0].x} ${allCoords[0].y}`;
-      if (allCoords.length === 2) {
-        const dy = Math.abs(allCoords[1].y - allCoords[0].y) * 0.4 + 20;
-        d += ` C ${allCoords[0].x} ${allCoords[0].y + dy}, ${allCoords[1].x} ${allCoords[1].y + dy}, ${allCoords[1].x} ${allCoords[1].y}`;
-      } else {
-        for (let i = 0; i < allCoords.length - 1; i++) {
-          const p0 = i > 0 ? allCoords[i - 1] : allCoords[i];
-          const p1 = allCoords[i];
-          const p2 = allCoords[i + 1];
-          const p3 = i !== allCoords.length - 2 ? allCoords[i + 2] : p2;
-
-          const cp1x = p1.x + (p2.x - p0.x) / 6;
-          const cp1y = p1.y + (p2.y - p0.y) / 6;
-          const cp2x = p2.x - (p3.x - p1.x) / 6;
-          const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-          d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-        }
+      function triggerShortCircuit(reason) {
+        if (isMcbTripped) return;
+        isMcbTripped = true;
+        isMcbOn = false;
+        document.getElementById("mcb").classList.add("tripped");
+        const sw = document.getElementById("mcb-toggle");
+        sw.className = "mcb-switch tripped-lever";
+        sw.textContent = "TRIP";
+        const alertBanner = document.getElementById("short-circuit-alert");
+        alertBanner.textContent = `⚠️ KORSLETING (${reason})! MCB TRIP OTOMATIS.`;
+        alertBanner.style.display = "block";
+        const stat = document.getElementById("status-bar");
+        stat.textContent = "KORSLETING TERDETEKSI: MCB TRIP!";
+        stat.style.color = "#ff1744";
       }
 
-      wire.pathVisible.setAttribute('d', d);
-      wire.pathHitbox.setAttribute('d', d);
+      function getTerminalCenter(el) {
+        const stageRect = stage.getBoundingClientRect();
+        const elRect = el.getBoundingClientRect();
+        return {
+          x: (elRect.left + elRect.width / 2 - stageRect.left) / scale,
+          y: (elRect.top + elRect.height / 2 - stageRect.top) / scale,
+        };
+      }
 
-      wire.handleGroup.innerHTML = '';
-      wire.points.forEach((pt, idx) => {
-        const handle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        handle.setAttribute('cx', pt.x);
-        handle.setAttribute('cy', pt.y);
-        handle.setAttribute('r', '8');
-        handle.setAttribute('class', 'waypoint-handle');
-
-        const onDragStart = (e) => {
+      document.querySelectorAll(".terminal").forEach((term) => {
+        term.addEventListener("click", (e) => {
           e.stopPropagation();
-          draggingHandle = { wireId: wire.id, pointIndex: idx };
+          if (isDeleteMode || isAddPointMode) return;
+          if (!selectedTerminal) {
+            selectedTerminal = term;
+            term.classList.add("selected");
+          } else if (selectedTerminal === term) {
+            selectedTerminal.classList.remove("selected");
+            selectedTerminal = null;
+          } else {
+            addWire(selectedTerminal, term, activeColor);
+            selectedTerminal.classList.remove("selected");
+            selectedTerminal = null;
+            evaluateCircuit();
+          }
+        });
+      });
+
+      function addWire(termA, termB, color, existingPoints = null) {
+        const fromId = termA.getAttribute("data-id");
+        const toId = termB.getAttribute("data-id");
+        if (
+          !existingPoints &&
+          wires.some(
+            (w) =>
+              (w.from === fromId && w.to === toId) ||
+              (w.from === toId && w.to === fromId),
+          )
+        )
+          return;
+
+        const wireId = "wire_" + wireIdCounter++;
+        const pA = getTerminalCenter(termA);
+        const pB = getTerminalCenter(termB);
+        let points = existingPoints || [
+          { x: (pA.x + pB.x) / 2, y: Math.max(pA.y, pB.y) + 30 },
+        ];
+
+        const groupEl = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
+        groupEl.setAttribute("class", "wire-group");
+
+        const pathHitbox = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path",
+        );
+        pathHitbox.setAttribute("class", "wire-hitbox");
+
+        const pathVisible = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path",
+        );
+        pathVisible.setAttribute("stroke", color);
+        pathVisible.setAttribute("class", "wire-visible");
+
+        const handleGroup = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "g",
+        );
+
+        const onWireTap = (e) => {
+          e.stopPropagation();
+          if (isDeleteMode) {
+            deleteWireById(wireId);
+          } else if (isAddPointMode) {
+            const stageRect = stage.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const clickX = (clientX - stageRect.left) / scale;
+            const clickY = (clientY - stageRect.top) / scale;
+            insertWaypoint(wireId, clickX, clickY);
+          }
         };
 
-        handle.addEventListener('mousedown', onDragStart);
-        handle.addEventListener('touchstart', onDragStart, { passive: true });
-
-        handle.addEventListener('contextmenu', (e) => {
+        pathHitbox.addEventListener("click", onWireTap);
+        pathHitbox.addEventListener("contextmenu", (e) => {
           e.preventDefault();
           e.stopPropagation();
-          wire.points.splice(idx, 1);
-          renderWire(wire);
+          deleteWireById(wireId);
         });
 
-        wire.handleGroup.appendChild(handle);
-      });
-    }
+        groupEl.appendChild(pathHitbox);
+        groupEl.appendChild(pathVisible);
+        groupEl.appendChild(handleGroup);
+        svgLayer.appendChild(groupEl);
 
-    function renderAllWires() {
-      wires.forEach(renderWire);
-    }
+        const wireObj = {
+          id: wireId,
+          from: fromId,
+          to: toId,
+          color: color,
+          points: points,
+          groupEl: groupEl,
+          pathVisible: pathVisible,
+          pathHitbox: pathHitbox,
+          handleGroup: handleGroup,
+        };
 
-    const onHandleMove = (e) => {
-      if (!draggingHandle) return;
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        wires.push(wireObj);
+        renderWire(wireObj);
+      }
 
-      const stageRect = stage.getBoundingClientRect();
-      const newX = Math.max(10, Math.min(1050, (clientX - stageRect.left) / scale));
-      const newY = Math.max(10, Math.min(610, (clientY - stageRect.top) / scale));
+      function deleteWireById(wireId) {
+        const idx = wires.findIndex((w) => w.id === wireId);
+        if (idx !== -1) {
+          wires[idx].groupEl.remove();
+          wires.splice(idx, 1);
+          evaluateCircuit();
+        }
+      }
 
-      const wire = wires.find(w => w.id === draggingHandle.wireId);
-      if (wire && wire.points[draggingHandle.pointIndex]) {
-        wire.points[draggingHandle.pointIndex].x = Math.round(newX);
-        wire.points[draggingHandle.pointIndex].y = Math.round(newY);
+      function insertWaypoint(wireId, x, y) {
+        const wire = wires.find((w) => w.id === wireId);
+        if (!wire) return;
+        wire.points.push({ x: Math.round(x), y: Math.round(y) });
         renderWire(wire);
       }
-    };
 
-    window.addEventListener('mousemove', onHandleMove);
-    window.addEventListener('touchmove', onHandleMove, { passive: false });
+      function renderWire(wire) {
+        const elA = document.querySelector(`[data-id="${wire.from}"]`);
+        const elB = document.querySelector(`[data-id="${wire.to}"]`);
+        if (!elA || !elB) return;
 
-    const onHandleEnd = () => { draggingHandle = null; };
-    window.addEventListener('mouseup', onHandleEnd);
-    window.addEventListener('touchend', onHandleEnd);
+        const start = getTerminalCenter(elA);
+        const end = getTerminalCenter(elB);
+        const allCoords = [start, ...wire.points, end];
 
-    function undoLastWire() {
-      if (wires.length === 0) return;
-      const lastWire = wires.pop();
-      if (lastWire) lastWire.groupEl.remove();
-      evaluateCircuit();
-    }
-
-    window.addEventListener('keydown', (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        e.preventDefault();
-        undoLastWire();
-      }
-    });
-
-    function clearAllWires() {
-      wires.forEach(w => w.groupEl.remove());
-      wires = [];
-      evaluateCircuit();
-    }
-
-    function saveWiring() {
-      const exportData = {
-        version: "1.6",
-        wires: wires.map(w => ({
-          from: w.from,
-          to: w.to,
-          color: w.color,
-          points: w.points
-        }))
-      };
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `plc_wiring_${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function loadWiring(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedData = JSON.parse(e.target.result);
-          if (!importedData.wires) return;
-          clearAllWires();
-          importedData.wires.forEach(w => {
-            const termA = document.querySelector(`[data-id="${w.from}"]`);
-            const termB = document.querySelector(`[data-id="${w.to}"]`);
-            if (termA && termB) addWire(termA, termB, w.color, w.points);
-          });
-          evaluateCircuit();
-        } catch (err) {
-          alert('Format berkas tidak valid: ' + err.message);
-        }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
-    }
-
-    function setButtonState(code, isPressed) {
-      buttonStates[code] = isPressed;
-      evaluateCircuit();
-    }
-
-    function areNodesConnected(startNode, targetNode, visited = new Set()) {
-      if (startNode === targetNode) return true;
-      visited.add(startNode);
-
-      let directNeighbors = [];
-      wires.forEach(w => {
-        if (w.from === startNode && !visited.has(w.to)) directNeighbors.push(w.to);
-        if (w.to === startNode && !visited.has(w.from)) directNeighbors.push(w.from);
-      });
-
-      if (isMcbOn && !isMcbTripped) {
-        if (startNode === 'MCB_IN' && !visited.has('MCB_OUT')) directNeighbors.push('MCB_OUT');
-        if (startNode === 'MCB_OUT' && !visited.has('MCB_IN')) directNeighbors.push('MCB_IN');
-      }
-
-      if (startNode === 'PB0_T1' && buttonStates['00'] && !visited.has('PB0_T2')) directNeighbors.push('PB0_T2');
-      if (startNode === 'PB0_T2' && buttonStates['00'] && !visited.has('PB0_T1')) directNeighbors.push('PB0_T1');
-
-      if (startNode === 'PB1_T1' && buttonStates['01'] && !visited.has('PB1_T2')) directNeighbors.push('PB1_T2');
-      if (startNode === 'PB1_T2' && buttonStates['01'] && !visited.has('PB1_T1')) directNeighbors.push('PB1_T1');
-
-      if (startNode === 'PB2_T1' && buttonStates['02'] && !visited.has('PB2_T2')) directNeighbors.push('PB2_T2');
-      if (startNode === 'PB2_T2' && buttonStates['02'] && !visited.has('PB2_T1')) directNeighbors.push('PB2_T1');
-
-      for (let n of directNeighbors) {
-        if (areNodesConnected(n, targetNode, visited)) return true;
-      }
-      return false;
-    }
-
-    function evaluateCircuit() {
-      // 1. Deteksi Hubungan Singkat / Short Circuit
-      const acShortDirect = areNodesConnected('PLN_LINE', 'PLN_NEUTRAL');
-      const dcShortDirect = areNodesConnected('PSU_+V', 'PSU_-V');
-
-      if (acShortDirect && isMcbOn && !isMcbTripped) {
-        triggerShortCircuit('Hubungan Singkat Fasa (L) ke Netral (N)');
-        return;
-      }
-      if (dcShortDirect && isMcbOn && !isMcbTripped) {
-        triggerShortCircuit('Hubungan Singkat Beban DC (+V ke -V)');
-        return;
-      }
-
-      if (!acShortDirect && !dcShortDirect && !isMcbTripped) {
-        document.getElementById('short-circuit-alert').style.display = 'none';
-        document.getElementById('mcb').classList.remove('tripped');
-      }
-
-      // Evaluasi Daya Utama
-      const psuHasPhase = areNodesConnected('PLN_LINE', 'PSU_AC_L');
-      const psuHasNeutral = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
-      const psuActive = !isMcbTripped && psuHasPhase && psuHasNeutral;
-
-      const plcHasPhase = areNodesConnected('PLN_LINE', 'PLC_L1');
-      const plcHasNeutral = areNodesConnected('PLN_NEUTRAL', 'PLC_L2N');
-      const plcPowered = !isMcbTripped && plcHasPhase && plcHasNeutral;
-
-      document.getElementById('led-pwr').className = 'led' + (plcPowered ? ' active-pwr' : '');
-
-      // Evaluasi Sinyal Input
-      const inputComGrounded = psuActive && areNodesConnected('PLC_IN_COM', 'PSU_-V');
-      const in00_active = plcPowered && inputComGrounded && areNodesConnected('PSU_+V', 'PLC_IN_00');
-      const in01_active = plcPowered && inputComGrounded && areNodesConnected('PSU_+V', 'PLC_IN_01');
-      const in02_active = plcPowered && inputComGrounded && areNodesConnected('PSU_+V', 'PLC_IN_02');
-
-      document.getElementById('led-in-00').className = 'led' + (in00_active ? ' active-in' : '');
-      document.getElementById('led-in-01').className = 'led' + (in01_active ? ' active-in' : '');
-      document.getElementById('led-in-02').className = 'led' + (in02_active ? ' active-in' : '');
-
-      if (!plcPowered) {
-        plcInternalLogic.fwdLatched = false;
-        plcInternalLogic.revLatched = false;
-      } else {
-        if (in00_active) {
-          plcInternalLogic.fwdLatched = false;
-          plcInternalLogic.revLatched = false;
+        let d = `M ${allCoords[0].x} ${allCoords[0].y}`;
+        if (allCoords.length === 2) {
+          const dy = Math.abs(allCoords[1].y - allCoords[0].y) * 0.4 + 20;
+          d += ` C ${allCoords[0].x} ${allCoords[0].y + dy}, ${allCoords[1].x} ${allCoords[1].y + dy}, ${allCoords[1].x} ${allCoords[1].y}`;
         } else {
-          if (in01_active && !plcInternalLogic.revLatched) plcInternalLogic.fwdLatched = true;
-          if (in02_active && !plcInternalLogic.fwdLatched) plcInternalLogic.revLatched = true;
+          for (let i = 0; i < allCoords.length - 1; i++) {
+            const p0 = i > 0 ? allCoords[i - 1] : allCoords[i];
+            const p1 = allCoords[i];
+            const p2 = allCoords[i + 1];
+            const p3 = i !== allCoords.length - 2 ? allCoords[i + 2] : p2;
+            const cp1x = p1.x + (p2.x - p0.x) / 6;
+            const cp1y = p1.y + (p2.y - p0.y) / 6;
+            const cp2x = p2.x - (p3.x - p1.x) / 6;
+            const cp2y = p2.y - (p3.y - p1.y) / 6;
+            d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+          }
         }
+
+        wire.pathVisible.setAttribute("d", d);
+        wire.pathHitbox.setAttribute("d", d);
+
+        wire.handleGroup.innerHTML = "";
+        wire.points.forEach((pt, idx) => {
+          const handle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle",
+          );
+          handle.setAttribute("cx", pt.x);
+          handle.setAttribute("cy", pt.y);
+          handle.setAttribute("r", "8");
+          handle.setAttribute("class", "waypoint-handle");
+
+          const onDragStart = (e) => {
+            e.stopPropagation();
+            draggingHandle = { wireId: wire.id, pointIndex: idx };
+          };
+
+          handle.addEventListener("mousedown", onDragStart);
+          handle.addEventListener("touchstart", onDragStart, { passive: true });
+          handle.addEventListener("contextmenu", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            wire.points.splice(idx, 1);
+            renderWire(wire);
+          });
+
+          wire.handleGroup.appendChild(handle);
+        });
       }
 
-      const out00_active = plcInternalLogic.fwdLatched;
-      const out01_active = plcInternalLogic.revLatched;
+      function renderAllWires() {
+        wires.forEach(renderWire);
+      }
 
-      document.getElementById('led-out-00').className = 'led' + (out00_active ? ' active-out' : '');
-      document.getElementById('led-out-01').className = 'led' + (out01_active ? ' active-out' : '');
+      const onHandleMove = (e) => {
+        if (!draggingHandle) return;
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        const stageRect = stage.getBoundingClientRect();
+        const newX = Math.max(
+          10,
+          Math.min(1110, (clientX - stageRect.left) / scale),
+        );
+        const newY = Math.max(
+          10,
+          Math.min(630, (clientY - stageRect.top) / scale),
+        );
 
-      const com0_phase = areNodesConnected('PLN_LINE', 'PLC_OUT_COM0');
-      const com1_phase = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
+        const wire = wires.find((w) => w.id === draggingHandle.wireId);
+        if (wire && wire.points[draggingHandle.pointIndex]) {
+          wire.points[draggingHandle.pointIndex].x = Math.round(newX);
+          wire.points[draggingHandle.pointIndex].y = Math.round(newY);
+          renderWire(wire);
+        }
+      };
 
-      // BEBAN LAMPU NON-POLARITAS (Bisa Bolak-Balik Terhubung ke Output PLC maupun Netral)
-      const lampFwd_ok = 
-        (areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL')) ||
-        (areNodesConnected('PLC_OUT_00', 'LP_FWD_N') && areNodesConnected('LP_FWD_L', 'PLN_NEUTRAL'));
+      window.addEventListener("mousemove", onHandleMove);
+      window.addEventListener("touchmove", onHandleMove, { passive: false });
+      const onHandleEnd = () => {
+        draggingHandle = null;
+      };
+      window.addEventListener("mouseup", onHandleEnd);
+      window.addEventListener("touchend", onHandleEnd);
 
-      const lampRev_ok = 
-        (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
-        (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
+      function undoLastWire() {
+        if (wires.length === 0) return;
+        const lastWire = wires.pop();
+        if (lastWire) lastWire.groupEl.remove();
+        evaluateCircuit();
+      }
 
-      document.getElementById('lamp-fwd').className = 'pilot-lamp lamp-green' + (out00_active && com0_phase && lampFwd_ok ? ' lit' : '');
-      document.getElementById('lamp-rev').className = 'pilot-lamp lamp-yellow' + (out01_active && com1_phase && lampRev_ok ? ' lit' : '');
-
-      // Animasi Live Trace
-      wires.forEach(w => {
-        w.pathVisible.classList.remove('wire-energized', 'wire-energized-ac');
-        if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
-
-        const connectedToDcPlus = psuActive && (areNodesConnected(w.from, 'PSU_+V') || areNodesConnected(w.to, 'PSU_+V'));
-        const connectedToAcLine = areNodesConnected(w.from, 'PLN_LINE') || areNodesConnected(w.to, 'PLN_LINE');
-
-        if (connectedToDcPlus) {
-          w.pathVisible.classList.add('wire-energized');
-        } else if (connectedToAcLine) {
-          w.pathVisible.classList.add('wire-energized-ac');
+      window.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          undoLastWire();
         }
       });
 
-      const stat = document.getElementById('status-bar');
-      if (isMcbTripped) {
-        stat.textContent = "MCB TRIP KARENA KORSLETING!";
-        stat.style.color = "#ff1744";
-      } else if (isAddPointMode) {
-        stat.textContent = "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
-        stat.style.color = "#f39c12";
-      } else if (isDeleteMode) {
-        stat.textContent = "MODE HAPUS AKTIF";
-        stat.style.color = "#ff1744";
-      } else if (!plcPowered) {
-        stat.textContent = "STATUS: PLC MATI";
-        stat.style.color = "#ff5722";
-      } else if (!psuActive) {
-        stat.textContent = "STATUS: PSU MATI";
-        stat.style.color = "#ff9800";
-      } else {
-        stat.textContent = "STATUS: RUNNING";
-        stat.style.color = "#00e676";
+      function clearAllWires() {
+        wires.forEach((w) => w.groupEl.remove());
+        wires = [];
+        evaluateCircuit();
       }
-    }
 
-    function openDiagnostics() {
-      const diagModal = document.getElementById('diag-modal');
-      const diagList = document.getElementById('diag-list');
-      diagList.innerHTML = '';
+      function saveWiring() {
+        const exportData = {
+          version: "2.1",
+          program: currentProgram,
+          wires: wires.map((w) => ({
+            from: w.from,
+            to: w.to,
+            color: w.color,
+            points: w.points,
+          })),
+        };
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `plc_wiring_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
 
-      const mcbInOk = areNodesConnected('PLN_LINE', 'MCB_IN');
-      const psuAcPhaseOk = areNodesConnected('PLN_LINE', 'PSU_AC_L');
-      const psuAcNeutralOk = areNodesConnected('PLN_NEUTRAL', 'PSU_AC_N');
-      const plcL1Ok = areNodesConnected('PLN_LINE', 'PLC_L1');
-      const plcL2NOk = areNodesConnected('PLN_NEUTRAL', 'PLC_L2N');
+      function loadWiring(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            if (!importedData.wires) return;
+            clearAllWires();
+            if (importedData.program) {
+              document.getElementById("program-select").value =
+                importedData.program;
+              changePLCProgram();
+            }
+            importedData.wires.forEach((w) => {
+              const termA = document.querySelector(`[data-id="${w.from}"]`);
+              const termB = document.querySelector(`[data-id="${w.to}"]`);
+              if (termA && termB) addWire(termA, termB, w.color, w.points);
+            });
+            evaluateCircuit();
+          } catch (err) {
+            alert("Format berkas tidak valid: " + err.message);
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = "";
+      }
 
-      const comInputGrounded = areNodesConnected('PLC_IN_COM', 'PSU_-V');
-      const pbStopFeed = areNodesConnected('PSU_+V', 'PB0_T1') || areNodesConnected('PSU_+V', 'PB0_T2');
-      const pbStopTo00 = areNodesConnected('PLC_IN_00', 'PB0_T1') || areNodesConnected('PLC_IN_00', 'PB0_T2');
+      function setButtonState(code, isPressed) {
+        buttonStates[code] = isPressed;
+        evaluateCircuit();
+      }
 
-      const pbFwdFeed = areNodesConnected('PSU_+V', 'PB1_T1') || areNodesConnected('PSU_+V', 'PB1_T2');
-      const pbFwdTo01 = areNodesConnected('PLC_IN_01', 'PB1_T1') || areNodesConnected('PLC_IN_01', 'PB1_T2');
+      function areNodesConnected(startNode, targetNode, visited = new Set()) {
+        if (startNode === targetNode) return true;
+        visited.add(startNode);
 
-      const pbRevFeed = areNodesConnected('PSU_+V', 'PB2_T1') || areNodesConnected('PSU_+V', 'PB2_T2');
-      const pbRevTo02 = areNodesConnected('PLC_IN_02', 'PB2_T1') || areNodesConnected('PLC_IN_02', 'PB2_T2');
+        let directNeighbors = [];
+        wires.forEach((w) => {
+          if (w.from === startNode && !visited.has(w.to))
+            directNeighbors.push(w.to);
+          if (w.to === startNode && !visited.has(w.from))
+            directNeighbors.push(w.from);
+        });
 
-      const com0PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM0');
-      const lampFwd_ok = 
-        (areNodesConnected('PLC_OUT_00', 'LP_FWD_L') && areNodesConnected('LP_FWD_N', 'PLN_NEUTRAL')) ||
-        (areNodesConnected('PLC_OUT_00', 'LP_FWD_N') && areNodesConnected('LP_FWD_L', 'PLN_NEUTRAL'));
+        if (isMcbOn && !isMcbTripped) {
+          if (startNode === "MCB_IN" && !visited.has("MCB_OUT"))
+            directNeighbors.push("MCB_OUT");
+          if (startNode === "MCB_OUT" && !visited.has("MCB_IN"))
+            directNeighbors.push("MCB_IN");
+        }
 
-      const com1PhaseOk = areNodesConnected('PLN_LINE', 'PLC_OUT_COM1');
-      const lampRev_ok = 
-        (areNodesConnected('PLC_OUT_01', 'LP_REV_L') && areNodesConnected('LP_REV_N', 'PLN_NEUTRAL')) ||
-        (areNodesConnected('PLC_OUT_01', 'LP_REV_N') && areNodesConnected('LP_REV_L', 'PLN_NEUTRAL'));
+        if (
+          startNode === "PB0_T1" &&
+          buttonStates["00"] &&
+          !visited.has("PB0_T2")
+        )
+          directNeighbors.push("PB0_T2");
+        if (
+          startNode === "PB0_T2" &&
+          buttonStates["00"] &&
+          !visited.has("PB0_T1")
+        )
+          directNeighbors.push("PB0_T1");
 
-      const checks = [
-        { name: "Proteksi MCB", ok: mcbInOk, msg: "PLN Fasa (L) terhubung ke MCB IN", err: "Kabel Fasa PLN belum disambung ke terminal MCB IN." },
-        { name: "Catu Daya PSU AC", ok: psuAcPhaseOk && psuAcNeutralOk, msg: "PSU menerima suplai 220V AC (L & N)", err: "Terminal L atau N pada Power Supply belum terhubung ke listrik PLN." },
-        { name: "Daya Utama PLC", ok: plcL1Ok && plcL2NOk, msg: "PLC Omron CP1E hidup (L1 & L2/N terhubung)", err: "PLC mati. Terminal L1 dan L2/N PLC belum tersambung ke Fasa & Netral." },
-        { name: "Common Input PLC", ok: comInputGrounded, msg: "Terminal COM Input terhubung ke -V (0V DC)", err: "Terminal COM Input atas belum disambung ke kutub -V (0V) Power Supply." },
-        { name: "Wiring PB STOP (00)", ok: pbStopFeed && pbStopTo00, msg: "Tombol STOP terhubung dari +V ke Input 00", err: "Tombol STOP (merah) belum tersambung lengkap antara +V PSU dan terminal 00." },
-        { name: "Wiring PB FORWARD (01)", ok: pbFwdFeed && pbFwdTo01, msg: "Tombol START FWD terhubung dari +V ke Input 01", err: "Tombol FWD (hijau) belum tersambung antara +V PSU dan terminal 01." },
-        { name: "Wiring PB REVERSE (02)", ok: pbRevFeed && pbRevTo02, msg: "Tombol START REV terhubung dari +V ke Input 02", err: "Tombol REV (kuning) belum tersambung antara +V PSU dan terminal 02." },
-        { name: "Output Forward (100.00)", ok: com0PhaseOk && lampFwd_ok, msg: "COM0 berfasa & Rangkaian Lampu FWD lengkap", err: "Lampu Hijau belum lengkap. Hubungkan 1 kaki lampu ke terminal 100.00 dan 1 kaki lainnya ke Netral (N), serta COM0 ke Fasa PLN." },
-        { name: "Output Reverse (100.01)", ok: com1PhaseOk && lampRev_ok, msg: "COM1 berfasa & Rangkaian Lampu REV lengkap", err: "Lampu Kuning belum lengkap. Hubungkan 1 kaki lampu ke terminal 100.01 dan 1 kaki lainnya ke Netral (N), serta COM1 ke Fasa PLN." }
-      ];
+        if (
+          startNode === "PB1_T1" &&
+          buttonStates["01"] &&
+          !visited.has("PB1_T2")
+        )
+          directNeighbors.push("PB1_T2");
+        if (
+          startNode === "PB1_T2" &&
+          buttonStates["01"] &&
+          !visited.has("PB1_T1")
+        )
+          directNeighbors.push("PB1_T1");
 
-      checks.forEach(c => {
-        const item = document.createElement('div');
-        item.className = 'diag-item';
-        item.innerHTML = `
-          <div class="diag-icon" style="color:${c.ok ? '#00e676' : '#ff5252'}">${c.ok ? '✅' : '❌'}</div>
+        if (
+          startNode === "PB2_T1" &&
+          buttonStates["02"] &&
+          !visited.has("PB2_T2")
+        )
+          directNeighbors.push("PB2_T2");
+        if (
+          startNode === "PB2_T2" &&
+          buttonStates["02"] &&
+          !visited.has("PB2_T1")
+        )
+          directNeighbors.push("PB2_T1");
+
+        for (let n of directNeighbors) {
+          if (areNodesConnected(n, targetNode, visited)) return true;
+        }
+        return false;
+      }
+
+      // Pemetaan COM untuk kanal output CP1E
+      const outputComMap = {
+        PLC_OUT_00: "PLC_OUT_COM0",
+        PLC_OUT_01: "PLC_OUT_COM1",
+        PLC_OUT_02: "PLC_OUT_COM2",
+        PLC_OUT_03: "PLC_OUT_COM2",
+        PLC_OUT_04: "PLC_OUT_COM3",
+        PLC_OUT_05: "PLC_OUT_COM3",
+        PLC_OUT_06: "PLC_OUT_COM3",
+        PLC_OUT_07: "PLC_OUT_COM3",
+      };
+
+      function evaluateCircuit() {
+        const acShortDirect = areNodesConnected("PLN_LINE", "PLN_NEUTRAL");
+        const dcShortDirect = areNodesConnected("PSU_+V", "PSU_-V");
+
+        if (acShortDirect && isMcbOn && !isMcbTripped) {
+          triggerShortCircuit("Hubungan Singkat Fasa (L) ke Netral (N)");
+          return;
+        }
+        if (dcShortDirect && isMcbOn && !isMcbTripped) {
+          triggerShortCircuit("Hubungan Singkat Beban DC (+V ke -V)");
+          return;
+        }
+
+        if (!acShortDirect && !dcShortDirect && !isMcbTripped) {
+          document.getElementById("short-circuit-alert").style.display = "none";
+          document.getElementById("mcb").classList.remove("tripped");
+        }
+
+        const psuHasPhase = areNodesConnected("PLN_LINE", "PSU_AC_L");
+        const psuHasNeutral = areNodesConnected("PLN_NEUTRAL", "PSU_AC_N");
+        const psuActive = !isMcbTripped && psuHasPhase && psuHasNeutral;
+
+        const plcHasPhase = areNodesConnected("PLN_LINE", "PLC_L1");
+        const plcHasNeutral = areNodesConnected("PLN_NEUTRAL", "PLC_L2N");
+        const plcPowered = !isMcbTripped && plcHasPhase && plcHasNeutral;
+
+        document.getElementById("led-pwr").className =
+          "led" + (plcPowered ? " active-pwr" : "");
+
+        // Deteksi Mode Input CP1E:
+        // Mode 1: Sourcing (PNP) -> COM ke -V (0V DC), Input menerima +V
+        // Mode 2: Sinking (NPN)  -> COM ke +V (24V DC), Input menerima -V
+        const comToMinus =
+          psuActive && areNodesConnected("PLC_IN_COM", "PSU_-V");
+        const comToPlus =
+          psuActive && areNodesConnected("PLC_IN_COM", "PSU_+V");
+
+        let in00_active = false;
+        let in01_active = false;
+        let in02_active = false;
+
+        if (plcPowered) {
+          if (comToMinus) {
+            in00_active = areNodesConnected("PSU_+V", "PLC_IN_00");
+            in01_active = areNodesConnected("PSU_+V", "PLC_IN_01");
+            in02_active = areNodesConnected("PSU_+V", "PLC_IN_02");
+          } else if (comToPlus) {
+            in00_active = areNodesConnected("PSU_-V", "PLC_IN_00");
+            in01_active = areNodesConnected("PSU_-V", "PLC_IN_01");
+            in02_active = areNodesConnected("PSU_-V", "PLC_IN_02");
+          }
+        }
+
+        document.getElementById("led-in-00").className =
+          "led" + (in00_active ? " active-in" : "");
+        document.getElementById("led-in-01").className =
+          "led" + (in01_active ? " active-in" : "");
+        document.getElementById("led-in-02").className =
+          "led" + (in02_active ? " active-in" : "");
+
+        let out00_active = false; // Standby Red
+        let out01_active = false; // FWD Run
+        let out02_active = false; // REV Run
+
+        if (plcPowered) {
+          if (currentProgram === "FWD_REV") {
+            if (in00_active) {
+              plcInternalLogic.fwdLatched = false;
+              plcInternalLogic.revLatched = false;
+            } else {
+              if (in01_active && !plcInternalLogic.revLatched)
+                plcInternalLogic.fwdLatched = true;
+              if (in02_active && !plcInternalLogic.fwdLatched)
+                plcInternalLogic.revLatched = true;
+            }
+            out01_active = plcInternalLogic.fwdLatched;
+            out02_active = plcInternalLogic.revLatched;
+            out00_active = !out01_active && !out02_active;
+          } else if (currentProgram === "DOL") {
+            if (in00_active) {
+              plcInternalLogic.dolLatched = false;
+            } else if (in01_active) {
+              plcInternalLogic.dolLatched = true;
+            }
+            out01_active = plcInternalLogic.dolLatched;
+            out00_active = !plcInternalLogic.dolLatched;
+            out02_active = false;
+          } else if (currentProgram === "JOGGING") {
+            out01_active = in01_active && !in02_active;
+            out02_active = in02_active && !in01_active;
+            out00_active = !out01_active && !out02_active;
+          }
+        }
+
+        document.getElementById("led-out-00").className =
+          "led" + (out00_active ? " active-out-red" : "");
+        document.getElementById("led-out-01").className =
+          "led" + (out01_active ? " active-out" : "");
+        document.getElementById("led-out-02").className =
+          "led" + (out02_active ? " active-out" : "");
+
+        // Helper untuk mengecek apakah lampu menyala pada output aktif apa pun (00 s/d 07)
+        function checkLampLighting(lampL, lampN, isChannelActive) {
+          if (!isChannelActive) return false;
+
+          const termLHasNeutral = areNodesConnected(lampL, "PLN_NEUTRAL");
+          const termNHasNeutral = areNodesConnected(lampN, "PLN_NEUTRAL");
+          if (!termLHasNeutral && !termNHasNeutral) return false;
+
+          const lampOutputSide = termLHasNeutral ? lampN : lampL;
+
+          // Periksa apakah tersambung ke salah satu kontak output PLC (00 s/d 07)
+          const allOutputs = [
+            "PLC_OUT_00",
+            "PLC_OUT_01",
+            "PLC_OUT_02",
+            "PLC_OUT_03",
+            "PLC_OUT_04",
+            "PLC_OUT_05",
+            "PLC_OUT_06",
+            "PLC_OUT_07",
+          ];
+
+          for (let outNode of allOutputs) {
+            if (areNodesConnected(lampOutputSide, outNode)) {
+              const reqCom = outputComMap[outNode];
+              if (areNodesConnected("PLN_LINE", reqCom)) {
+                return true;
+              }
+            }
+          }
+          return false;
+        }
+
+        const isStandbyLit = checkLampLighting(
+          "LP_SBY_L",
+          "LP_SBY_N",
+          out00_active,
+        );
+        const isFwdLit = checkLampLighting(
+          "LP_FWD_L",
+          "LP_FWD_N",
+          out01_active,
+        );
+        const isRevLit = checkLampLighting(
+          "LP_REV_L",
+          "LP_REV_N",
+          out02_active,
+        );
+
+        document.getElementById("lamp-standby").className =
+          "pilot-lamp lamp-red" + (isStandbyLit ? " lit" : "");
+        document.getElementById("lamp-fwd").className =
+          "pilot-lamp lamp-green" + (isFwdLit ? " lit" : "");
+        document.getElementById("lamp-rev").className =
+          "pilot-lamp lamp-yellow" + (isRevLit ? " lit" : "");
+
+        // Live Trace Animation
+        wires.forEach((w) => {
+          w.pathVisible.classList.remove("wire-energized", "wire-energized-ac");
+          if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
+
+          const connectedToDcPlus =
+            psuActive &&
+            (areNodesConnected(w.from, "PSU_+V") ||
+              areNodesConnected(w.to, "PSU_+V"));
+          const connectedToAcLine =
+            areNodesConnected(w.from, "PLN_LINE") ||
+            areNodesConnected(w.to, "PLN_LINE");
+
+          if (connectedToDcPlus) {
+            w.pathVisible.classList.add("wire-energized");
+          } else if (connectedToAcLine) {
+            w.pathVisible.classList.add("wire-energized-ac");
+          }
+        });
+
+        const stat = document.getElementById("status-bar");
+        if (isMcbTripped) {
+          stat.textContent = "MCB TRIP KARENA KORSLETING!";
+          stat.style.color = "#ff1744";
+        } else if (isAddPointMode) {
+          stat.textContent =
+            "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
+          stat.style.color = "#f39c12";
+        } else if (isDeleteMode) {
+          stat.textContent = "MODE HAPUS AKTIF";
+          stat.style.color = "#ff1744";
+        } else if (!plcPowered) {
+          stat.textContent = "STATUS: PLC MATI";
+          stat.style.color = "#ff5722";
+        } else if (!psuActive) {
+          stat.textContent = "STATUS: PSU MATI";
+          stat.style.color = "#ff9800";
+        } else {
+          stat.textContent = `STATUS: PROGRAM ${currentProgram} RUNNING`;
+          stat.style.color = "#00e676";
+        }
+      }
+
+      function openDiagnostics() {
+        const diagModal = document.getElementById("diag-modal");
+        const diagList = document.getElementById("diag-list");
+        diagList.innerHTML = "";
+
+        const mcbInOk = areNodesConnected("PLN_LINE", "MCB_IN");
+        const psuAcPhaseOk = areNodesConnected("PLN_LINE", "PSU_AC_L");
+        const psuAcNeutralOk = areNodesConnected("PLN_NEUTRAL", "PSU_AC_N");
+        const plcL1Ok = areNodesConnected("PLN_LINE", "PLC_L1");
+        const plcL2NOk = areNodesConnected("PLN_NEUTRAL", "PLC_L2N");
+
+        const comToMinus = areNodesConnected("PLC_IN_COM", "PSU_-V");
+        const comToPlus = areNodesConnected("PLC_IN_COM", "PSU_+V");
+        const comInputOk = comToMinus || comToPlus;
+
+        const buttonPolarityNode = comToMinus
+          ? "PSU_+V"
+          : comToPlus
+            ? "PSU_-V"
+            : null;
+
+        const pbStopFeed = buttonPolarityNode
+          ? areNodesConnected(buttonPolarityNode, "PB0_T1") ||
+            areNodesConnected(buttonPolarityNode, "PB0_T2")
+          : false;
+        const pbStopTo00 =
+          areNodesConnected("PLC_IN_00", "PB0_T1") ||
+          areNodesConnected("PLC_IN_00", "PB0_T2");
+
+        const pbFwdFeed = buttonPolarityNode
+          ? areNodesConnected(buttonPolarityNode, "PB1_T1") ||
+            areNodesConnected(buttonPolarityNode, "PB1_T2")
+          : false;
+        const pbFwdTo01 =
+          areNodesConnected("PLC_IN_01", "PB1_T1") ||
+          areNodesConnected("PLC_IN_01", "PB1_T2");
+
+        const pbRevFeed = buttonPolarityNode
+          ? areNodesConnected(buttonPolarityNode, "PB2_T1") ||
+            areNodesConnected(buttonPolarityNode, "PB2_T2")
+          : false;
+        const pbRevTo02 =
+          areNodesConnected("PLC_IN_02", "PB2_T1") ||
+          areNodesConnected("PLC_IN_02", "PB2_T2");
+
+        function checkLampWiringDiag(lampL, lampN) {
+          const termLHasNeutral = areNodesConnected(lampL, "PLN_NEUTRAL");
+          const termNHasNeutral = areNodesConnected(lampN, "PLN_NEUTRAL");
+          if (!termLHasNeutral && !termNHasNeutral) return false;
+          const lampOutputSide = termLHasNeutral ? lampN : lampL;
+
+          const allOutputs = [
+            "PLC_OUT_00",
+            "PLC_OUT_01",
+            "PLC_OUT_02",
+            "PLC_OUT_03",
+            "PLC_OUT_04",
+            "PLC_OUT_05",
+            "PLC_OUT_06",
+            "PLC_OUT_07",
+          ];
+          for (let outNode of allOutputs) {
+            if (areNodesConnected(lampOutputSide, outNode)) {
+              const reqCom = outputComMap[outNode];
+              if (areNodesConnected("PLN_LINE", reqCom)) return true;
+            }
+          }
+          return false;
+        }
+
+        const lampStandby_ok = checkLampWiringDiag("LP_SBY_L", "LP_SBY_N");
+        const lampFwd_ok = checkLampWiringDiag("LP_FWD_L", "LP_FWD_N");
+        const lampRev_ok = checkLampWiringDiag("LP_REV_L", "LP_REV_N");
+
+        let checks = [
+          {
+            name: "Proteksi MCB",
+            ok: mcbInOk,
+            msg: "PLN Fasa (L) terhubung ke MCB IN",
+            err: "Kabel Fasa PLN belum disambung ke MCB IN.",
+          },
+          {
+            name: "Catu Daya PSU AC",
+            ok: psuAcPhaseOk && psuAcNeutralOk,
+            msg: "PSU menerima suplai 220V AC (L & N)",
+            err: "Terminal L atau N pada PSU belum terhubung ke PLN.",
+          },
+          {
+            name: "Daya Utama PLC",
+            ok: plcL1Ok && plcL2NOk,
+            msg: "PLC Omron CP1E hidup (L1 & L2/N terhubung)",
+            err: "PLC mati. Terminal L1 dan L2/N PLC belum tersambung ke Fasa & Netral.",
+          },
+          {
+            name: "Common Input PLC",
+            ok: comInputOk,
+            msg: comToPlus
+              ? "Terminal COM Input terhubung ke +V (Sinking/NPN Mode)"
+              : "Terminal COM Input terhubung ke -V (Sourcing/PNP Mode)",
+            err: "Terminal COM Input atas belum disambung ke +V atau -V PSU.",
+          },
+          {
+            name: "Lampu Merah Standby",
+            ok: lampStandby_ok,
+            msg: "Rangkaian Lampu Standby terhubung ke terminal Output & Netral lengkap",
+            err: "Kabel Lampu Merah Standby belum lengkap (pastikan COM output pasangan dialiri Fasa dan ujung lainnya ke Netral).",
+          },
+        ];
+
+        if (currentProgram === "FWD_REV") {
+          checks.push(
+            {
+              name: "Wiring PB STOP (00)",
+              ok: pbStopFeed && pbStopTo00,
+              msg: "Tombol STOP terhubung ke Input 00 dengan polaritas yang sesuai",
+              err: "Tombol STOP belum terhubung antara polaritas lawan COM dan terminal 00.",
+            },
+            {
+              name: "Wiring PB FWD (01)",
+              ok: pbFwdFeed && pbFwdTo01,
+              msg: "Tombol START FWD terhubung ke Input 01 dengan polaritas yang sesuai",
+              err: "Tombol FWD belum terhubung antara polaritas lawan COM dan terminal 01.",
+            },
+            {
+              name: "Wiring PB REV (02)",
+              ok: pbRevFeed && pbRevTo02,
+              msg: "Tombol START REV terhubung ke Input 02 dengan polaritas yang sesuai",
+              err: "Tombol REV belum terhubung antara polaritas lawan COM dan terminal 02.",
+            },
+            {
+              name: "Lampu Hijau FWD",
+              ok: lampFwd_ok,
+              msg: "Rangkaian Lampu FWD lengkap ke salah satu Output ber-COM Fasa & Netral",
+              err: "Lampu Hijau belum tersambung ke terminal output aktif & Netral.",
+            },
+            {
+              name: "Lampu Kuning REV",
+              ok: lampRev_ok,
+              msg: "Rangkaian Lampu REV lengkap ke salah satu Output ber-COM Fasa & Netral",
+              err: "Lampu Kuning belum tersambung ke terminal output aktif & Netral.",
+            },
+          );
+        } else if (currentProgram === "DOL") {
+          checks.push(
+            {
+              name: "Wiring PB STOP (00)",
+              ok: pbStopFeed && pbStopTo00,
+              msg: "Tombol STOP terhubung ke Input 00",
+              err: "Tombol STOP belum terhubung.",
+            },
+            {
+              name: "Wiring PB START (01)",
+              ok: pbFwdFeed && pbFwdTo01,
+              msg: "Tombol START terhubung ke Input 01",
+              err: "Tombol START belum terhubung.",
+            },
+            {
+              name: "Lampu Hijau Motor",
+              ok: lampFwd_ok,
+              msg: "Lampu Motor Running lengkap",
+              err: "Rangkaian Lampu Motor Running belum lengkap.",
+            },
+          );
+        } else if (currentProgram === "JOGGING") {
+          checks.push(
+            {
+              name: "Wiring PB JOG FWD (01)",
+              ok: pbFwdFeed && pbFwdTo01,
+              msg: "Tombol JOG FWD terhubung ke Input 01",
+              err: "Tombol JOG FWD belum tersambung ke terminal 01.",
+            },
+            {
+              name: "Wiring PB JOG REV (02)",
+              ok: pbRevFeed && pbRevTo02,
+              msg: "Tombol JOG REV terhubung ke Input 02",
+              err: "Tombol JOG REV belum tersambung ke terminal 02.",
+            },
+            {
+              name: "Lampu JOG FWD & REV",
+              ok: lampFwd_ok && lampRev_ok,
+              msg: "Lampu JOG FWD & REV lengkap",
+              err: "Salah satu lampu Jog belum lengkap terpasang.",
+            },
+          );
+        }
+
+        checks.forEach((c) => {
+          const item = document.createElement("div");
+          item.className = "diag-item";
+          item.innerHTML = `
+          <div class="diag-icon" style="color:${c.ok ? "#00e676" : "#ff5252"}">${c.ok ? "✅" : "❌"}</div>
           <div>
             <b>${c.name}:</b> ${c.ok ? `<span style="color:#00e676">${c.msg}</span>` : `<span style="color:#ff7675">${c.err}</span>`}
           </div>
         `;
-        diagList.appendChild(item);
-      });
+          diagList.appendChild(item);
+        });
 
-      diagModal.style.display = 'flex';
-    }
+        diagModal.style.display = "flex";
+      }
 
-    function closeDiagnostics() {
-      document.getElementById('diag-modal').style.display = 'none';
-    }
+      function closeDiagnostics() {
+        document.getElementById("diag-modal").style.display = "none";
+      }
 
-    resetZoomPan();
-    evaluateCircuit();
-  </script>
-</body>
+      resetZoomPan();
+      evaluateCircuit();
+    </script>
+  </body>
 </html>
