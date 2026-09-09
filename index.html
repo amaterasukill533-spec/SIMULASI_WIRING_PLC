@@ -18,25 +18,60 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-        user-select: none;
-        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
       }
       body {
         background: #121315;
         color: #ecf0f1;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         display: flex;
         flex-direction: column;
         height: 100vh;
+        height: 100dvh;
         overflow: hidden;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+
+      /* Petunjuk Mode Landscape untuk Layar Ponsel */
+      #landscape-hint {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        background: rgba(18, 19, 21, 0.96);
+        z-index: 9999;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        text-align: center;
+      }
+      .phone-icon-anim {
+        font-size: 48px;
+        margin-bottom: 16px;
+        animation: rotatePhone 2s ease-in-out infinite alternate;
+      }
+      @keyframes rotatePhone {
+        0% { transform: rotate(0deg); }
+        50% { transform: rotate(-90deg); }
+        100% { transform: rotate(-90deg); }
+      }
+      @media screen and (orientation: portrait) and (max-width: 850px) {
+        #landscape-hint {
+          display: flex;
+        }
       }
 
       #toolbar {
         background: #23272a;
-        padding: 6px 12px;
+        padding: 4px 8px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
         border-bottom: 2px solid #36393f;
         z-index: 50;
         overflow-x: auto;
@@ -55,7 +90,7 @@
         background: #34495e;
         color: white;
         border: 1px solid #4e5d6c;
-        padding: 6px 10px;
+        padding: 5px 8px;
         border-radius: 4px;
         cursor: pointer;
         font-size: 11px;
@@ -63,10 +98,10 @@
         align-items: center;
         gap: 4px;
         flex-shrink: 0;
-        transition: all 0.15s;
+        touch-action: manipulation;
       }
-      .btn:hover {
-        background: #415b76;
+      .btn:active {
+        opacity: 0.75;
       }
       .btn-undo {
         background: #2980b9;
@@ -113,9 +148,9 @@
       .prog-selector-wrap {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         background: #1a1c1e;
-        padding: 3px 8px;
+        padding: 2px 6px;
         border-radius: 4px;
         border: 1px solid #0984e3;
         flex-shrink: 0;
@@ -127,8 +162,7 @@
         border-radius: 3px;
         font-size: 11px;
         font-weight: bold;
-        padding: 3px 6px;
-        cursor: pointer;
+        padding: 2px 4px;
         outline: none;
       }
 
@@ -149,17 +183,17 @@
         width: 24px;
         height: 24px;
         border-radius: 3px;
-        cursor: pointer;
         font-weight: bold;
         font-size: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
+        touch-action: manipulation;
       }
       #zoom-label {
         font-size: 11px;
         font-family: monospace;
-        min-width: 38px;
+        min-width: 36px;
         text-align: center;
         color: #00e676;
       }
@@ -167,10 +201,10 @@
       .color-picker {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         font-size: 11px;
         background: #1e2024;
-        padding: 3px 8px;
+        padding: 2px 6px;
         border-radius: 4px;
         border: 1px solid #36393f;
         flex-shrink: 0;
@@ -181,6 +215,7 @@
         border-radius: 50%;
         cursor: pointer;
         border: 2px solid transparent;
+        touch-action: manipulation;
       }
       .color-dot.active {
         border-color: white;
@@ -194,7 +229,7 @@
         color: #00e676;
         font-weight: bold;
         flex-shrink: 0;
-        padding-left: 10px;
+        padding-left: 8px;
       }
 
       #viewport-container {
@@ -202,8 +237,8 @@
         position: relative;
         background: #18191c;
         overflow: hidden;
-        cursor: grab;
         touch-action: none;
+        cursor: grab;
       }
       #viewport-container.panning {
         cursor: grabbing;
@@ -240,7 +275,7 @@
       .wire-hitbox {
         pointer-events: stroke;
         stroke: transparent;
-        stroke-width: 24px;
+        stroke-width: 32px;
         fill: none;
         cursor: pointer;
       }
@@ -250,22 +285,6 @@
         fill: none;
         stroke-linecap: round;
         stroke-linejoin: round;
-        transition:
-          stroke-width 0.15s,
-          filter 0.15s;
-      }
-      .wire-group:hover .wire-visible {
-        stroke-width: 5px;
-        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.5));
-      }
-      #viewport-container.addpt-cursor .wire-group:hover .wire-visible {
-        stroke: #f39c12 !important;
-        stroke-width: 6px;
-      }
-      #viewport-container.delete-cursor .wire-group:hover .wire-visible {
-        stroke: #ff1744 !important;
-        stroke-width: 6px;
-        stroke-dasharray: 6 3;
       }
 
       @keyframes dashMove {
@@ -293,11 +312,6 @@
         fill: #f39c12;
         stroke: #fff;
         stroke-width: 2px;
-        transition: r 0.1s;
-      }
-      .waypoint-handle:hover {
-        r: 9;
-        fill: #e67e22;
       }
 
       .component {
@@ -310,8 +324,8 @@
       }
 
       .terminal {
-        width: 20px;
-        height: 20px;
+        width: 26px;
+        height: 26px;
         background: var(--terminal-screw);
         border-radius: 50%;
         border: 2px solid #333;
@@ -320,18 +334,21 @@
         justify-content: center;
         cursor: pointer;
         position: relative;
+        touch-action: manipulation;
+        pointer-events: auto;
       }
       .terminal:hover,
       .terminal.selected {
         background: var(--terminal-hover);
-        box-shadow: 0 0 8px yellow;
-        transform: scale(1.18);
+        box-shadow: 0 0 10px yellow;
+        transform: scale(1.2);
       }
       .terminal::after {
         content: "";
-        width: 9px;
+        width: 11px;
         height: 2px;
         background: #222;
+        pointer-events: none;
       }
       .term-label {
         font-size: 9.5px;
@@ -340,6 +357,7 @@
         color: #111;
         text-align: center;
         margin-bottom: 2px;
+        pointer-events: none;
       }
 
       #busbar-pln {
@@ -377,14 +395,13 @@
         justify-content: space-between;
         align-items: center;
         padding: 8px 4px;
-        transition: box-shadow 0.2s;
       }
       #mcb.tripped {
         box-shadow: 0 0 20px #ff1744;
         border-color: #ff1744;
       }
       .mcb-switch {
-        width: 30px;
+        width: 34px;
         height: 48px;
         background: #27ae60;
         border-radius: 4px;
@@ -393,10 +410,10 @@
         align-items: center;
         justify-content: center;
         color: white;
-        font-size: 10px;
+        font-size: 11px;
         font-weight: bold;
         border: 2px solid #222;
-        transition: background 0.2s;
+        touch-action: manipulation;
       }
       .mcb-switch.off {
         background: #c0392b;
@@ -568,13 +585,14 @@
         background: #ecf0f1;
       }
       .push-btn {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         border: 3px solid #7f8c8d;
         cursor: pointer;
         display: inline-block;
         margin-bottom: 6px;
+        touch-action: none;
       }
       .push-btn:active {
         transform: scale(0.92);
@@ -700,33 +718,34 @@
       #short-circuit-alert {
         display: none;
         position: fixed;
-        top: 50px;
+        top: 45px;
         left: 50%;
         transform: translateX(-50%);
         background: #c0392b;
         color: #fff;
         border: 2px solid #fff;
-        padding: 10px 20px;
+        padding: 8px 16px;
         border-radius: 6px;
         font-weight: bold;
-        font-size: 13px;
+        font-size: 12px;
         z-index: 110;
         box-shadow: 0 0 25px #ff1744;
-        animation: blinkAlert 0.4s infinite alternate;
-      }
-      @keyframes blinkAlert {
-        from {
-          opacity: 0.85;
-          transform: translateX(-50%) scale(0.98);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(-50%) scale(1.02);
-        }
       }
     </style>
   </head>
   <body>
+    <!-- Overlay Instruksi Putar Layar (Landscape) -->
+    <div id="landscape-hint">
+      <div class="phone-icon-anim">📱 ➔ 🔄</div>
+      <h3 style="font-size: 16px; color: #00e676; margin-bottom: 8px">Gunakan Mode Landscape</h3>
+      <p style="font-size: 12px; color: #dcdde1; max-width: 280px; line-height: 1.5; margin-bottom: 16px">
+        Putar HP ke posisi mendatar agar seluruh modul simulator, kabel, dan panel tombol terlihat pas dan mudah disambung.
+      </p>
+      <button class="btn btn-io" onclick="document.getElementById('landscape-hint').style.display='none'">
+        Tetap Lanjut Tegak
+      </button>
+    </div>
+
     <div id="toolbar">
       <span style="font-size: 12px; font-weight: bold; color: #ecf0f1"
         >PLC Workbench</span
@@ -767,24 +786,24 @@
       </div>
 
       <button class="btn btn-diag" onclick="openDiagnostics()">
-        🔍 Periksa Rangkaian
+        🔍 Periksa
       </button>
       <button class="btn btn-trace" id="btn-trace" onclick="toggleLiveTrace()">
-        ⚡ Live Trace Arus
+        ⚡ Trace
       </button>
       <button
         class="btn btn-mode-addpt"
         id="btn-addpt"
         onclick="toggleAddPointMode()"
       >
-        📍 Alat Tambah Titik
+        📍 Titik
       </button>
       <button
         class="btn btn-delete-mode"
         id="btn-delete"
         onclick="toggleDeleteMode()"
       >
-        ✂ Mode Hapus
+        ✂ Hapus
       </button>
       <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
       <button class="btn" onclick="clearAllWires()">Reset</button>
@@ -838,7 +857,7 @@
       <div id="panzoom-layer">
         <svg id="wire-layer"></svg>
 
-        <!-- Sumber PLN 220V AC -->
+        <!-- PLN 220V AC -->
         <div id="busbar-pln">
           <div class="bus-line" style="color: #d35400">
             <span>SUMBER PLN [L] (Fasa 220V AC):</span>
@@ -856,7 +875,7 @@
           <div class="terminal" data-id="MCB_IN"></div>
 
           <div style="text-align: center">
-            <div class="mcb-switch" id="mcb-toggle" onclick="toggleMCB()">
+            <div class="mcb-switch" id="mcb-toggle">
               ON
             </div>
             <div style="font-size: 9px; font-weight: bold; margin-top: 2px">
@@ -911,7 +930,6 @@
             >
               INPUT TERMINALS (CH 00)
             </div>
-            <!-- Baris 1 Input -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #ff7675">L1</div>
@@ -950,7 +968,6 @@
                 <div class="terminal" data-id="PLC_IN_11"></div>
               </div>
             </div>
-            <!-- Baris 2 Input -->
             <div
               class="terminal-tier"
               style="justify-content: flex-start; gap: 14px; padding-left: 55px"
@@ -982,7 +999,6 @@
             </div>
           </div>
 
-          <!-- Bagian Tengah Bodi & LED Display -->
           <div class="plc-mid">
             <div
               style="
@@ -1083,13 +1099,11 @@
             </div>
           </div>
 
-          <!-- RAK TERMINAL OUTPUT BERTINGKAT -->
           <div class="terminal-rack">
             <div class="output-section-title">
               OUTPUT RELAY CONTACTS (CH 100: 00 - 07)
             </div>
 
-            <!-- Baris Atas Terminal Output -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #ff7675">00</div>
@@ -1117,7 +1131,6 @@
               </div>
             </div>
 
-            <!-- Baris Bawah Terminal Output -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #fab1a0">COM0</div>
@@ -1190,14 +1203,7 @@
             "
           >
             <div style="text-align: center">
-              <div
-                class="push-btn btn-red"
-                id="pb-stop"
-                onmousedown="setButtonState('00', true)"
-                onmouseup="setButtonState('00', false)"
-                ontouchstart="setButtonState('00', true)"
-                ontouchend="setButtonState('00', false)"
-              ></div>
+              <div class="push-btn btn-red" id="pb-stop"></div>
               <div style="display: flex; gap: 6px; justify-content: center">
                 <div class="terminal" data-id="PB0_T1"></div>
                 <div class="terminal" data-id="PB0_T2"></div>
@@ -1216,14 +1222,7 @@
             </div>
 
             <div style="text-align: center">
-              <div
-                class="push-btn btn-green"
-                id="pb-fwd"
-                onmousedown="setButtonState('01', true)"
-                onmouseup="setButtonState('01', false)"
-                ontouchstart="setButtonState('01', true)"
-                ontouchend="setButtonState('01', false)"
-              ></div>
+              <div class="push-btn btn-green" id="pb-fwd"></div>
               <div style="display: flex; gap: 6px; justify-content: center">
                 <div class="terminal" data-id="PB1_T1"></div>
                 <div class="terminal" data-id="PB1_T2"></div>
@@ -1242,14 +1241,7 @@
             </div>
 
             <div style="text-align: center">
-              <div
-                class="push-btn btn-yellow"
-                id="pb-rev"
-                onmousedown="setButtonState('02', true)"
-                onmouseup="setButtonState('02', false)"
-                ontouchstart="setButtonState('02', true)"
-                ontouchend="setButtonState('02', false)"
-              ></div>
+              <div class="push-btn btn-yellow" id="pb-rev"></div>
               <div style="display: flex; gap: 6px; justify-content: center">
                 <div class="terminal" data-id="PB2_T1"></div>
                 <div class="terminal" data-id="PB2_T2"></div>
@@ -1283,7 +1275,6 @@
             INDIKATOR OUTPUT (AC 220V)
           </div>
           <div style="display: flex; justify-content: space-around">
-            <!-- LAMPU MERAH -->
             <div style="text-align: center">
               <div class="pilot-lamp lamp-red" id="lamp-standby"></div>
               <span
@@ -1296,7 +1287,6 @@
                 id="lbl-lamp-standby"
                 >STANDBY (OFF)</span
               >
-
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
                   <span class="lamp-term-badge badge-out-general">OUTPUT</span>
@@ -1309,7 +1299,6 @@
               </div>
             </div>
 
-            <!-- LAMPU HIJAU -->
             <div style="text-align: center">
               <div class="pilot-lamp lamp-green" id="lamp-fwd"></div>
               <span
@@ -1322,7 +1311,6 @@
                 id="lbl-lamp-01"
                 >RUN FWD</span
               >
-
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
                   <span class="lamp-term-badge badge-out-general">OUTPUT</span>
@@ -1335,7 +1323,6 @@
               </div>
             </div>
 
-            <!-- LAMPU KUNING -->
             <div style="text-align: center">
               <div class="pilot-lamp lamp-yellow" id="lamp-rev"></div>
               <span
@@ -1348,7 +1335,6 @@
                 id="lbl-lamp-02"
                 >RUN REV</span
               >
-
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
                   <span class="lamp-term-badge badge-out-general">OUTPUT</span>
@@ -1366,13 +1352,13 @@
     </div>
 
     <div id="short-circuit-alert">
-      ⚠️ BAHAYA: TERJADI KORSLETING (SHORT CIRCUIT)! MCB TRIP OTOMATIS.
+      ⚠️ BAHAYA: TERJADI KORSLETING! MCB TRIP OTOMATIS.
     </div>
 
     <div id="diag-modal" onclick="closeDiagnostics(event)">
       <div class="diag-box" onclick="event.stopPropagation()">
         <div class="diag-title">
-          <span>📋 Diagnostik & Verifikasi Wiring PLC (Omron CP1E)</span>
+          <span>📋 Diagnostik Wiring CP1E</span>
           <button
             class="btn"
             style="padding: 2px 8px"
@@ -1478,7 +1464,7 @@
 
       function zoomAtPoint(screenX, screenY, factor) {
         const oldScale = scale;
-        const newScale = Math.min(2.8, Math.max(0.35, oldScale * factor));
+        const newScale = Math.min(2.8, Math.max(0.2, oldScale * factor));
         if (newScale === oldScale) return;
         panX = screenX - (screenX - panX) * (newScale / oldScale);
         panY = screenY - (screenY - panY) * (newScale / oldScale);
@@ -1486,33 +1472,113 @@
         applyTransform(true);
       }
 
+      // Auto-fit responsive khusus HP & Desktop
       function resetZoomPan() {
         const vW = viewport.clientWidth;
         const vH = viewport.clientHeight;
         const baseW = 1120;
         const baseH = 640;
-        scale = Math.min(vW / baseW, vH / baseH);
-        if (scale > 1.0) scale = 1.0;
+        // Skala otomatis agar seluruh modul pas terlihat tanpa scroll
+        scale = Math.min(vW / baseW, vH / baseH) * 0.94;
         panX = (vW - baseW * scale) / 2;
         panY = (vH - baseH * scale) / 2;
         applyTransform(true);
       }
 
-      window.addEventListener("resize", resetZoomPan);
-      window.addEventListener("orientationchange", () =>
-        setTimeout(resetZoomPan, 250),
+      window.addEventListener("resize", () => {
+        resetZoomPan();
+      });
+      window.addEventListener("orientationchange", () => {
+        setTimeout(resetZoomPan, 300);
+      });
+
+      // Pan & Zoom Engine
+      viewport.addEventListener(
+        "touchstart",
+        (e) => {
+          if (draggingHandle) return;
+          if (e.target.closest(".terminal, .push-btn, .mcb-switch, .waypoint-handle, .wire-hitbox")) {
+            return;
+          }
+
+          if (e.touches.length === 2) {
+            isPinching = true;
+            isPanning = false;
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            pinchStartDist = Math.hypot(
+              t2.clientX - t1.clientX,
+              t2.clientY - t1.clientY,
+            );
+            pinchStartScale = scale;
+            const rect = viewport.getBoundingClientRect();
+            pinchStartMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            pinchStartMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+            pinchStartPanX = panX;
+            pinchStartPanY = panY;
+          } else if (e.touches.length === 1 && !isPinching) {
+            isPanning = true;
+            lastPanX = e.touches[0].clientX;
+            lastPanY = e.touches[0].clientY;
+          }
+        },
+        { passive: true },
       );
 
       viewport.addEventListener(
-        "wheel",
+        "touchmove",
         (e) => {
-          e.preventDefault();
-          const factor = e.deltaY < 0 ? 1.12 : 0.89;
-          const rect = viewport.getBoundingClientRect();
-          zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, factor);
+          if (draggingHandle) return;
+          if (e.touches.length === 2 && isPinching && pinchStartDist > 0) {
+            if (e.cancelable) e.preventDefault();
+            const t1 = e.touches[0];
+            const t2 = e.touches[1];
+            const currentDist = Math.hypot(
+              t2.clientX - t1.clientX,
+              t2.clientY - t1.clientY,
+            );
+            const factor = currentDist / pinchStartDist;
+            const newScale = Math.min(
+              2.8,
+              Math.max(0.2, pinchStartScale * factor),
+            );
+            const rect = viewport.getBoundingClientRect();
+            const currentMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
+            const currentMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
+            panX =
+              currentMidX -
+              (pinchStartMidX - pinchStartPanX) * (newScale / pinchStartScale);
+            panY =
+              currentMidY -
+              (pinchStartMidY - pinchStartPanY) * (newScale / pinchStartScale);
+            scale = newScale;
+            applyTransform(false);
+          } else if (e.touches.length === 1 && isPanning && !isPinching) {
+            if (e.cancelable) e.preventDefault();
+            const clientX = e.touches[0].clientX;
+            const clientY = e.touches[0].clientY;
+            panX += clientX - lastPanX;
+            panY += clientY - lastPanY;
+            lastPanX = clientX;
+            lastPanY = clientY;
+            applyTransform(false);
+          }
         },
         { passive: false },
       );
+
+      viewport.addEventListener("touchend", (e) => {
+        if (e.touches.length < 2) isPinching = false;
+        if (e.touches.length === 1) {
+          isPanning = true;
+          lastPanX = e.touches[0].clientX;
+          lastPanY = e.touches[0].clientY;
+        }
+        if (e.touches.length === 0) {
+          isPanning = false;
+          renderAllWires();
+        }
+      });
 
       viewport.addEventListener("mousedown", (e) => {
         if (
@@ -1546,93 +1612,15 @@
       });
 
       viewport.addEventListener(
-        "touchstart",
+        "wheel",
         (e) => {
-          if (draggingHandle) return;
-          if (e.touches.length === 2) {
-            isPinching = true;
-            isPanning = false;
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
-            pinchStartDist = Math.hypot(
-              t2.clientX - t1.clientX,
-              t2.clientY - t1.clientY,
-            );
-            pinchStartScale = scale;
-            const rect = viewport.getBoundingClientRect();
-            pinchStartMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
-            pinchStartMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
-            pinchStartPanX = panX;
-            pinchStartPanY = panY;
-          } else if (e.touches.length === 1 && !isPinching) {
-            if (
-              e.target === viewport ||
-              e.target === stage ||
-              e.target === svgLayer
-            ) {
-              isPanning = true;
-              lastPanX = e.touches[0].clientX;
-              lastPanY = e.touches[0].clientY;
-            }
-          }
+          e.preventDefault();
+          const factor = e.deltaY < 0 ? 1.12 : 0.89;
+          const rect = viewport.getBoundingClientRect();
+          zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, factor);
         },
         { passive: false },
       );
-
-      viewport.addEventListener(
-        "touchmove",
-        (e) => {
-          if (draggingHandle) return;
-          if (e.touches.length === 2 && isPinching && pinchStartDist > 0) {
-            e.preventDefault();
-            const t1 = e.touches[0];
-            const t2 = e.touches[1];
-            const currentDist = Math.hypot(
-              t2.clientX - t1.clientX,
-              t2.clientY - t1.clientY,
-            );
-            const factor = currentDist / pinchStartDist;
-            const newScale = Math.min(
-              2.8,
-              Math.max(0.35, pinchStartScale * factor),
-            );
-            const rect = viewport.getBoundingClientRect();
-            const currentMidX = (t1.clientX + t2.clientX) / 2 - rect.left;
-            const currentMidY = (t1.clientY + t2.clientY) / 2 - rect.top;
-            panX =
-              currentMidX -
-              (pinchStartMidX - pinchStartPanX) * (newScale / pinchStartScale);
-            panY =
-              currentMidY -
-              (pinchStartMidY - pinchStartPanY) * (newScale / pinchStartScale);
-            scale = newScale;
-            applyTransform(false);
-          } else if (e.touches.length === 1 && isPanning && !isPinching) {
-            e.preventDefault();
-            const clientX = e.touches[0].clientX;
-            const clientY = e.touches[0].clientY;
-            panX += clientX - lastPanX;
-            panY += clientY - lastPanY;
-            lastPanX = clientX;
-            lastPanY = clientY;
-            applyTransform(false);
-          }
-        },
-        { passive: false },
-      );
-
-      viewport.addEventListener("touchend", (e) => {
-        if (e.touches.length < 2) isPinching = false;
-        if (e.touches.length === 1) {
-          isPanning = true;
-          lastPanX = e.touches[0].clientX;
-          lastPanY = e.touches[0].clientY;
-        }
-        if (e.touches.length === 0) {
-          isPanning = false;
-          renderAllWires();
-        }
-      });
 
       function setColor(hex, el) {
         activeColor = hex;
@@ -1657,14 +1645,14 @@
         const stat = document.getElementById("status-bar");
         if (isAddPointMode) {
           btn.classList.add("active");
-          btn.textContent = "✖ Selesai Tambah Titik";
+          btn.textContent = "✖ Titik";
           viewport.classList.add("addpt-cursor");
           stat.textContent =
-            "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
+            "ALAT TITIK: Sentuh kabel untuk menambah belokan";
           stat.style.color = "#f39c12";
         } else {
           btn.classList.remove("active");
-          btn.textContent = "📍 Alat Tambah Titik";
+          btn.textContent = "📍 Titik";
           viewport.classList.remove("addpt-cursor");
           evaluateCircuit();
         }
@@ -1677,13 +1665,13 @@
         const stat = document.getElementById("status-bar");
         if (isDeleteMode) {
           btn.classList.add("active");
-          btn.textContent = "✖ Selesai Hapus";
+          btn.textContent = "✖ Hapus";
           viewport.classList.add("delete-cursor");
-          stat.textContent = "KLIK KABEL UNTUK HAPUS";
+          stat.textContent = "SENTUH KABEL UNTUK HAPUS";
           stat.style.color = "#ff1744";
         } else {
           btn.classList.remove("active");
-          btn.textContent = "✂ Mode Hapus";
+          btn.textContent = "✂ Hapus";
           viewport.classList.remove("delete-cursor");
           evaluateCircuit();
         }
@@ -1713,6 +1701,17 @@
         evaluateCircuit();
       }
 
+      const mcbToggleEl = document.getElementById("mcb-toggle");
+      mcbToggleEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleMCB();
+      });
+      mcbToggleEl.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMCB();
+      });
+
       function triggerShortCircuit(reason) {
         if (isMcbTripped) return;
         isMcbTripped = true;
@@ -1722,10 +1721,10 @@
         sw.className = "mcb-switch tripped-lever";
         sw.textContent = "TRIP";
         const alertBanner = document.getElementById("short-circuit-alert");
-        alertBanner.textContent = `⚠️ KORSLETING (${reason})! MCB TRIP OTOMATIS.`;
+        alertBanner.textContent = `⚠️ KORSLETING (${reason})! MCB TRIP.`;
         alertBanner.style.display = "block";
         const stat = document.getElementById("status-bar");
-        stat.textContent = "KORSLETING TERDETEKSI: MCB TRIP!";
+        stat.textContent = "KORSLETING: MCB TRIP!";
         stat.style.color = "#ff1744";
       }
 
@@ -1738,22 +1737,32 @@
         };
       }
 
+      function handleTerminalSelect(term, e) {
+        if (e) e.stopPropagation();
+        if (isDeleteMode || isAddPointMode) return;
+
+        if (!selectedTerminal) {
+          selectedTerminal = term;
+          term.classList.add("selected");
+        } else if (selectedTerminal === term) {
+          selectedTerminal.classList.remove("selected");
+          selectedTerminal = null;
+        } else {
+          addWire(selectedTerminal, term, activeColor);
+          selectedTerminal.classList.remove("selected");
+          selectedTerminal = null;
+          evaluateCircuit();
+        }
+      }
+
       document.querySelectorAll(".terminal").forEach((term) => {
         term.addEventListener("click", (e) => {
+          handleTerminalSelect(term, e);
+        });
+        term.addEventListener("touchend", (e) => {
+          e.preventDefault();
           e.stopPropagation();
-          if (isDeleteMode || isAddPointMode) return;
-          if (!selectedTerminal) {
-            selectedTerminal = term;
-            term.classList.add("selected");
-          } else if (selectedTerminal === term) {
-            selectedTerminal.classList.remove("selected");
-            selectedTerminal = null;
-          } else {
-            addWire(selectedTerminal, term, activeColor);
-            selectedTerminal.classList.remove("selected");
-            selectedTerminal = null;
-            evaluateCircuit();
-          }
+          handleTerminalSelect(term, e);
         });
       });
 
@@ -1816,6 +1825,12 @@
         };
 
         pathHitbox.addEventListener("click", onWireTap);
+        pathHitbox.addEventListener("touchend", (e) => {
+          if (isDeleteMode || isAddPointMode) {
+            e.preventDefault();
+            onWireTap(e);
+          }
+        });
         pathHitbox.addEventListener("contextmenu", (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1897,7 +1912,7 @@
           );
           handle.setAttribute("cx", pt.x);
           handle.setAttribute("cy", pt.y);
-          handle.setAttribute("r", "8");
+          handle.setAttribute("r", "10");
           handle.setAttribute("class", "waypoint-handle");
 
           const onDragStart = (e) => {
@@ -1906,7 +1921,7 @@
           };
 
           handle.addEventListener("mousedown", onDragStart);
-          handle.addEventListener("touchstart", onDragStart, { passive: true });
+          handle.addEventListener("touchstart", onDragStart, { passive: false });
           handle.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1974,7 +1989,7 @@
 
       function saveWiring() {
         const exportData = {
-          version: "2.1",
+          version: "2.2",
           program: currentProgram,
           wires: wires.map((w) => ({
             from: w.from,
@@ -2026,6 +2041,29 @@
         buttonStates[code] = isPressed;
         evaluateCircuit();
       }
+
+      function bindButtonTouch(elemId, code) {
+        const btn = document.getElementById(elemId);
+        btn.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setButtonState(code, true);
+        }, { passive: false });
+
+        btn.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setButtonState(code, false);
+        }, { passive: false });
+
+        btn.addEventListener("mousedown", () => setButtonState(code, true));
+        btn.addEventListener("mouseup", () => setButtonState(code, false));
+        btn.addEventListener("mouseleave", () => setButtonState(code, false));
+      }
+
+      bindButtonTouch("pb-stop", "00");
+      bindButtonTouch("pb-fwd", "01");
+      bindButtonTouch("pb-rev", "02");
 
       function areNodesConnected(startNode, targetNode, visited = new Set()) {
         if (startNode === targetNode) return true;
@@ -2091,7 +2129,6 @@
         return false;
       }
 
-      // Pemetaan COM untuk kanal output CP1E
       const outputComMap = {
         PLC_OUT_00: "PLC_OUT_COM0",
         PLC_OUT_01: "PLC_OUT_COM1",
@@ -2132,13 +2169,9 @@
         document.getElementById("led-pwr").className =
           "led" + (plcPowered ? " active-pwr" : "");
 
-        // Deteksi Mode Input CP1E:
-        // Mode 1: Sourcing (PNP) -> COM ke -V (0V DC), Input menerima +V
-        // Mode 2: Sinking (NPN)  -> COM ke +V (24V DC), Input menerima -V
         const comToMinus =
           psuActive && areNodesConnected("PLC_IN_COM", "PSU_-V");
-        const comToPlus =
-          psuActive && areNodesConnected("PLC_IN_COM", "PSU_+V");
+        const comToPlus = psuActive && areNodesConnected("PLC_IN_COM", "PSU_+V");
 
         let in00_active = false;
         let in01_active = false;
@@ -2163,9 +2196,9 @@
         document.getElementById("led-in-02").className =
           "led" + (in02_active ? " active-in" : "");
 
-        let out00_active = false; // Standby Red
-        let out01_active = false; // FWD Run
-        let out02_active = false; // REV Run
+        let out00_active = false;
+        let out01_active = false;
+        let out02_active = false;
 
         if (plcPowered) {
           if (currentProgram === "FWD_REV") {
@@ -2204,7 +2237,6 @@
         document.getElementById("led-out-02").className =
           "led" + (out02_active ? " active-out" : "");
 
-        // Helper untuk mengecek apakah lampu menyala pada output aktif apa pun (00 s/d 07)
         function checkLampLighting(lampL, lampN, isChannelActive) {
           if (!isChannelActive) return false;
 
@@ -2214,7 +2246,6 @@
 
           const lampOutputSide = termLHasNeutral ? lampN : lampL;
 
-          // Periksa apakah tersambung ke salah satu kontak output PLC (00 s/d 07)
           const allOutputs = [
             "PLC_OUT_00",
             "PLC_OUT_01",
@@ -2242,16 +2273,8 @@
           "LP_SBY_N",
           out00_active,
         );
-        const isFwdLit = checkLampLighting(
-          "LP_FWD_L",
-          "LP_FWD_N",
-          out01_active,
-        );
-        const isRevLit = checkLampLighting(
-          "LP_REV_L",
-          "LP_REV_N",
-          out02_active,
-        );
+        const isFwdLit = checkLampLighting("LP_FWD_L", "LP_FWD_N", out01_active);
+        const isRevLit = checkLampLighting("LP_REV_L", "LP_REV_N", out02_active);
 
         document.getElementById("lamp-standby").className =
           "pilot-lamp lamp-red" + (isStandbyLit ? " lit" : "");
@@ -2260,7 +2283,6 @@
         document.getElementById("lamp-rev").className =
           "pilot-lamp lamp-yellow" + (isRevLit ? " lit" : "");
 
-        // Live Trace Animation
         wires.forEach((w) => {
           w.pathVisible.classList.remove("wire-energized", "wire-energized-ac");
           if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
@@ -2282,11 +2304,11 @@
 
         const stat = document.getElementById("status-bar");
         if (isMcbTripped) {
-          stat.textContent = "MCB TRIP KARENA KORSLETING!";
+          stat.textContent = "MCB TRIP!";
           stat.style.color = "#ff1744";
         } else if (isAddPointMode) {
           stat.textContent =
-            "ALAT TITIK AKTIF: Sentuh kabel untuk menambah titik belok";
+            "ALAT TITIK: Sentuh kabel";
           stat.style.color = "#f39c12";
         } else if (isDeleteMode) {
           stat.textContent = "MODE HAPUS AKTIF";
@@ -2298,7 +2320,7 @@
           stat.textContent = "STATUS: PSU MATI";
           stat.style.color = "#ff9800";
         } else {
-          stat.textContent = `STATUS: PROGRAM ${currentProgram} RUNNING`;
+          stat.textContent = `STATUS: ${currentProgram} RUNNING`;
           stat.style.color = "#00e676";
         }
       }
@@ -2508,6 +2530,11 @@
         document.getElementById("diag-modal").style.display = "none";
       }
 
+      // Inisialisasi awal pas layar
+      window.addEventListener("load", () => {
+        resetZoomPan();
+        evaluateCircuit();
+      });
       resetZoomPan();
       evaluateCircuit();
     </script>
