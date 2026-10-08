@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
     />
-    <title>PLC Wiring Workbench Simulator - Authentic Omron CP1E</title>
+    <title>PLC Wiring & Mnemonic Interpreter Workbench - Omron CP1E</title>
     <style>
       :root {
         --bg-panel: #2b2e38;
@@ -23,7 +23,8 @@
       body {
         background: #121315;
         color: #ecf0f1;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         display: flex;
         flex-direction: column;
         height: 100vh;
@@ -33,7 +34,7 @@
         -webkit-user-select: none;
       }
 
-      /* Petunjuk Mode Landscape untuk Layar Ponsel */
+      /* Petunjuk Mode Landscape */
       #landscape-hint {
         display: none;
         position: fixed;
@@ -56,9 +57,15 @@
         animation: rotatePhone 2s ease-in-out infinite alternate;
       }
       @keyframes rotatePhone {
-        0% { transform: rotate(0deg); }
-        50% { transform: rotate(-90deg); }
-        100% { transform: rotate(-90deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(-90deg);
+        }
+        100% {
+          transform: rotate(-90deg);
+        }
       }
       @media screen and (orientation: portrait) and (max-width: 850px) {
         #landscape-hint {
@@ -102,6 +109,11 @@
       }
       .btn:active {
         opacity: 0.75;
+      }
+      .btn-prog {
+        background: #00b894;
+        border-color: #55efc4;
+        font-weight: bold;
       }
       .btn-undo {
         background: #2980b9;
@@ -669,7 +681,8 @@
         color: #fff;
       }
 
-      #diag-modal {
+      /* Modal Styling General */
+      .modal-overlay {
         display: none;
         position: fixed;
         top: 0;
@@ -686,7 +699,7 @@
         border: 2px solid #4e5d6c;
         border-radius: 8px;
         width: 90%;
-        max-width: 550px;
+        max-width: 580px;
         padding: 16px;
         color: #ecf0f1;
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
@@ -715,6 +728,32 @@
         margin-top: 1px;
       }
 
+      /* Editor Mnemonic Modal Styles */
+      #code-editor {
+        width: 100%;
+        height: 220px;
+        background: #1e1e1e;
+        color: #00e676;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 10px;
+        border: 1px solid #555;
+        border-radius: 4px;
+        resize: vertical;
+        outline: none;
+        box-sizing: border-box;
+      }
+      .editor-help {
+        font-size: 10.5px;
+        color: #b2bec3;
+        margin-top: 6px;
+        line-height: 1.4;
+        background: #2d3436;
+        padding: 6px;
+        border-radius: 4px;
+      }
+
       #short-circuit-alert {
         display: none;
         position: fixed;
@@ -737,11 +776,27 @@
     <!-- Overlay Instruksi Putar Layar (Landscape) -->
     <div id="landscape-hint">
       <div class="phone-icon-anim">📱 ➔ 🔄</div>
-      <h3 style="font-size: 16px; color: #00e676; margin-bottom: 8px">Gunakan Mode Landscape</h3>
-      <p style="font-size: 12px; color: #dcdde1; max-width: 280px; line-height: 1.5; margin-bottom: 16px">
-        Putar HP ke posisi mendatar agar seluruh modul simulator, kabel, dan panel tombol terlihat pas dan mudah disambung.
+      <h3 style="font-size: 16px; color: #00e676; margin-bottom: 8px">
+        Gunakan Mode Landscape
+      </h3>
+      <p
+        style="
+          font-size: 12px;
+          color: #dcdde1;
+          max-width: 280px;
+          line-height: 1.5;
+          margin-bottom: 16px;
+        "
+      >
+        Putar HP ke posisi mendatar agar seluruh modul simulator, kabel, dan
+        panel tombol terlihat pas dan mudah disambung.
       </p>
-      <button class="btn btn-io" onclick="document.getElementById('landscape-hint').style.display='none'">
+      <button
+        class="btn btn-io"
+        onclick="
+          document.getElementById('landscape-hint').style.display = 'none'
+        "
+      >
         Tetap Lanjut Tegak
       </button>
     </div>
@@ -751,24 +806,22 @@
         >PLC Workbench</span
       >
 
+      <button class="btn btn-prog" onclick="openProgramEditor()">
+        📝 Program PLC
+      </button>
+
       <div class="prog-selector-wrap">
         <span style="font-size: 10px; font-weight: bold; color: #74b9ff"
-          >PROGRAM CX-P:</span
+          >PRESET:</span
         >
         <select
           class="prog-selector"
           id="program-select"
-          onchange="changePLCProgram()"
+          onchange="loadPresetProgram()"
         >
-          <option value="FWD_REV">
-            1. Rangkaian Forward - Reverse (Standby Red)
-          </option>
-          <option value="DOL">
-            2. Rangkaian DOL Start - Stop (Standby Red)
-          </option>
-          <option value="JOGGING">
-            3. Rangkaian Inching / Jogging (Standby Red)
-          </option>
+          <option value="FWD_REV">1. Forward - Reverse (Interlock)</option>
+          <option value="DOL">2. DOL Start - Stop (Latching)</option>
+          <option value="JOGGING">3. Inching / Jogging</option>
         </select>
       </div>
 
@@ -806,7 +859,7 @@
         ✂ Hapus
       </button>
       <button class="btn btn-undo" onclick="undoLastWire()">↶ Undo</button>
-      <button class="btn" onclick="clearAllWires()">Reset</button>
+      <button class="btn" onclick="clearAllWires()">Reset Wiring</button>
       <button class="btn btn-io" onclick="saveWiring()">💾 Simpan</button>
       <button
         class="btn btn-io"
@@ -875,9 +928,7 @@
           <div class="terminal" data-id="MCB_IN"></div>
 
           <div style="text-align: center">
-            <div class="mcb-switch" id="mcb-toggle">
-              ON
-            </div>
+            <div class="mcb-switch" id="mcb-toggle">ON</div>
             <div style="font-size: 9px; font-weight: bold; margin-top: 2px">
               1P 6A
             </div>
@@ -917,8 +968,9 @@
           </div>
         </div>
 
-        <!-- OMRON SYSMAC CP1E -->
+        <!-- OMRON SYSMAC CP1E E20 -->
         <div class="component" id="plc">
+          <!-- TERMINAL INPUT (CH 00) -->
           <div class="terminal-rack">
             <div
               style="
@@ -930,6 +982,8 @@
             >
               INPUT TERMINALS (CH 00)
             </div>
+
+            <!-- Baris Atas Input -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #ff7675">L1</div>
@@ -968,10 +1022,23 @@
                 <div class="terminal" data-id="PLC_IN_11"></div>
               </div>
             </div>
-            <div
-              class="terminal-tier"
-              style="justify-content: flex-start; gap: 14px; padding-left: 55px"
-            >
+
+            <!-- Baris Bawah Input -->
+            <div class="terminal-tier">
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #7f8c8d">NC</div>
+                <div
+                  class="terminal dummy-term"
+                  style="opacity: 0.3; pointer-events: none"
+                ></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #7f8c8d">🪛</div>
+                <div
+                  class="terminal dummy-term"
+                  style="opacity: 0.3; pointer-events: none"
+                ></div>
+              </div>
               <div class="plc-term-wrap">
                 <div class="term-label">00</div>
                 <div class="terminal" data-id="PLC_IN_00"></div>
@@ -996,16 +1063,25 @@
                 <div class="term-label">10</div>
                 <div class="terminal" data-id="PLC_IN_10"></div>
               </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #7f8c8d">-</div>
+                <div
+                  class="terminal dummy-term"
+                  style="opacity: 0; pointer-events: none"
+                ></div>
+              </div>
             </div>
           </div>
 
+          <!-- PANEL STATUS LED CP1E -->
           <div class="plc-mid">
             <div
               style="
                 font-weight: bold;
-                font-size: 12px;
+                font-size: 11px;
                 letter-spacing: 1px;
                 color: #ecf0f1;
+                text-align: center;
               "
             >
               OMRON SYSMAC CP1E
@@ -1047,18 +1123,6 @@
                 <div class="led" id="led-in-07"></div>
                 07
               </div>
-              <div style="text-align: center">
-                <div class="led" id="led-in-08"></div>
-                08
-              </div>
-              <div style="text-align: center">
-                <div class="led" id="led-in-09"></div>
-                09
-              </div>
-              <div style="text-align: center">
-                <div class="led" id="led-in-10"></div>
-                10
-              </div>
             </div>
             <div
               class="plc-led-panel"
@@ -1099,11 +1163,13 @@
             </div>
           </div>
 
+          <!-- TERMINAL OUTPUT RELAY (CH 100: 00 - 07) -->
           <div class="terminal-rack">
             <div class="output-section-title">
               OUTPUT RELAY CONTACTS (CH 100: 00 - 07)
             </div>
 
+            <!-- Baris Atas Output -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #ff7675">00</div>
@@ -1116,6 +1182,10 @@
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #ffeaa7">02</div>
                 <div class="terminal" data-id="PLC_OUT_02"></div>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label">03</div>
+                <div class="terminal" data-id="PLC_OUT_03"></div>
               </div>
               <div class="plc-term-wrap">
                 <div class="term-label">04</div>
@@ -1131,13 +1201,14 @@
               </div>
             </div>
 
+            <!-- Baris Bawah Output -->
             <div class="terminal-tier">
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #fab1a0">COM0</div>
                 <div
                   class="terminal"
                   data-id="PLC_OUT_COM0"
-                  title="Independent COM untuk 100.00"
+                  title="COM untuk Out 100.00"
                 ></div>
                 <span style="font-size: 7px; color: #888">(00)</span>
               </div>
@@ -1146,30 +1217,39 @@
                 <div
                   class="terminal"
                   data-id="PLC_OUT_COM1"
-                  title="Independent COM untuk 100.01"
+                  title="COM untuk Out 100.01"
                 ></div>
                 <span style="font-size: 7px; color: #888">(01)</span>
+              </div>
+              <div class="plc-term-wrap">
+                <div class="term-label" style="color: #7f8c8d">NC</div>
+                <div
+                  class="terminal dummy-term"
+                  style="opacity: 0.3; pointer-events: none"
+                ></div>
               </div>
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #fab1a0">COM2</div>
                 <div
                   class="terminal"
                   data-id="PLC_OUT_COM2"
-                  title="Shared COM untuk 100.02 & 100.03"
+                  title="COM untuk Out 100.02 & 100.03"
                 ></div>
                 <span style="font-size: 7px; color: #f39c12">(02/03)</span>
               </div>
               <div class="plc-term-wrap">
-                <div class="term-label">03</div>
-                <div class="terminal" data-id="PLC_OUT_03"></div>
-                <span style="font-size: 7px; color: #888">100.03</span>
+                <div class="term-label" style="color: #7f8c8d">NC</div>
+                <div
+                  class="terminal dummy-term"
+                  style="opacity: 0.3; pointer-events: none"
+                ></div>
               </div>
               <div class="plc-term-wrap">
                 <div class="term-label" style="color: #fab1a0">COM3</div>
                 <div
                   class="terminal"
                   data-id="PLC_OUT_COM3"
-                  title="Shared COM untuk 100.04 s/d 100.07"
+                  title="COM untuk Out 100.04-100.07"
                 ></div>
                 <span style="font-size: 7px; color: #0984e3">(04-07)</span>
               </div>
@@ -1217,7 +1297,7 @@
                   color: #c0392b;
                 "
                 id="lbl-btn-00"
-                >PB STOP</span
+                >PB STOP (00)</span
               >
             </div>
 
@@ -1236,7 +1316,7 @@
                   color: #27ae60;
                 "
                 id="lbl-btn-01"
-                >PB START FWD</span
+                >PB START (01)</span
               >
             </div>
 
@@ -1255,7 +1335,7 @@
                   color: #d4ac0d;
                 "
                 id="lbl-btn-02"
-                >PB START REV</span
+                >PB START REV (02)</span
               >
             </div>
           </div>
@@ -1285,7 +1365,7 @@
                   color: #ff4757;
                 "
                 id="lbl-lamp-standby"
-                >STANDBY (OFF)</span
+                >STANDBY (100.00)</span
               >
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
@@ -1309,7 +1389,7 @@
                   color: #27ae60;
                 "
                 id="lbl-lamp-01"
-                >RUN FWD</span
+                >RUN FWD (100.01)</span
               >
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
@@ -1333,7 +1413,7 @@
                   color: #d4ac0d;
                 "
                 id="lbl-lamp-02"
-                >RUN REV</span
+                >RUN REV (100.02)</span
               >
               <div class="lamp-term-container">
                 <div class="lamp-term-col">
@@ -1355,7 +1435,12 @@
       ⚠️ BAHAYA: TERJADI KORSLETING! MCB TRIP OTOMATIS.
     </div>
 
-    <div id="diag-modal" onclick="closeDiagnostics(event)">
+    <!-- MODAL DIAGNOSTIK WIRING -->
+    <div
+      id="diag-modal"
+      class="modal-overlay"
+      onclick="closeDiagnostics(event)"
+    >
       <div class="diag-box" onclick="event.stopPropagation()">
         <div class="diag-title">
           <span>📋 Diagnostik Wiring CP1E</span>
@@ -1374,6 +1459,62 @@
       </div>
     </div>
 
+    <!-- MODAL EDITOR PROGRAM MNEMONIC PLC -->
+    <div
+      id="prog-modal"
+      class="modal-overlay"
+      onclick="closeProgramEditor(event)"
+    >
+      <div class="diag-box" onclick="event.stopPropagation()">
+        <div class="diag-title">
+          <span>📝 Editor Statement List / Mnemonic PLC Omron</span>
+          <button
+            class="btn"
+            style="padding: 2px 8px"
+            onclick="closeProgramEditor()"
+          >
+            ✕
+          </button>
+        </div>
+        <textarea
+          id="code-editor"
+          spellcheck="false"
+          placeholder="Ketikkan kode instruksi mnemonic di sini..."
+        ></textarea>
+        <div class="editor-help">
+          <b>Sintaks Didukung:</b> <code>LD</code>, <code>LD NOT</code>,
+          <code>AND</code>, <code>AND NOT</code>, <code>OR</code>,
+          <code>OR NOT</code>, <code>OUT</code>, <code>OUT NOT</code>,
+          <code>SET</code>, <code>RST</code>, <code>END</code>.<br />
+          <b>Alamat Memori:</b> Input (<code>0.00</code> - <code>0.11</code>),
+          Output (<code>100.00</code> - <code>100.07</code>), Work Bit (<code
+            >W0.00</code
+          >
+          - <code>W10.00</code>).
+        </div>
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+          "
+        >
+          <span
+            id="editor-status"
+            style="font-size: 11px; font-weight: bold; color: #00e676"
+            >Siap.</span
+          >
+          <div style="display: flex; gap: 8px">
+            <button class="btn" onclick="closeProgramEditor()">Batal</button>
+            <button class="btn btn-prog" onclick="applyCustomProgram()">
+              ✔ Terapkan ke PLC
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script>
       let activeColor = "#e74c3c";
       let selectedTerminal = null;
@@ -1385,14 +1526,61 @@
       let isLiveTrace = false;
       let buttonStates = { "00": false, "01": false, "02": false };
 
-      let currentProgram = "FWD_REV";
-      let plcInternalLogic = {
-        fwdLatched: false,
-        revLatched: false,
-        dolLatched: false,
-      };
       let wireIdCounter = 1;
       let draggingHandle = null;
+
+      // PRESET PROGRAM MNEMONIC
+      const PRESET_PROGRAMS = {
+        FWD_REV: `// Program 1: Forward - Reverse Interlock
+LD 0.01
+OR 100.01
+AND NOT 0.00
+AND NOT 100.02
+OUT 100.01
+
+LD 0.02
+OR 100.02
+AND NOT 0.00
+AND NOT 100.01
+OUT 100.02
+
+LD NOT 100.01
+AND NOT 100.02
+OUT 100.00
+END`,
+        DOL: `// Program 2: Direct-On-Line (DOL) Start-Stop
+LD 0.01
+OR 100.01
+AND NOT 0.00
+OUT 100.01
+
+LD NOT 100.01
+OUT 100.00
+END`,
+        JOGGING: `// Program 3: Jogging / Inching Mode
+LD 0.01
+AND NOT 0.02
+OUT 100.01
+
+LD 0.02
+AND NOT 0.01
+OUT 100.02
+
+LD NOT 100.01
+AND NOT 100.02
+OUT 100.00
+END`,
+      };
+
+      // Teks Program Mnemonic Aktif Saat Ini
+      let activeMnemonicCode = PRESET_PROGRAMS.FWD_REV;
+
+      // Status Memori PLC internal
+      let plcMemory = {
+        inputs: {},
+        outputs: {},
+        workBits: {},
+      };
 
       const svgLayer = document.getElementById("wire-layer");
       const stage = document.getElementById("panzoom-layer");
@@ -1413,38 +1601,122 @@
       let pinchStartPanX = 0;
       let pinchStartPanY = 0;
 
-      function changePLCProgram() {
-        currentProgram = document.getElementById("program-select").value;
-        plcInternalLogic.fwdLatched = false;
-        plcInternalLogic.revLatched = false;
-        plcInternalLogic.dolLatched = false;
-
-        const lbl00 = document.getElementById("lbl-btn-00");
-        const lbl01 = document.getElementById("lbl-btn-01");
-        const lbl02 = document.getElementById("lbl-btn-02");
-        const lamp01 = document.getElementById("lbl-lamp-01");
-        const lamp02 = document.getElementById("lbl-lamp-02");
-
-        if (currentProgram === "FWD_REV") {
-          lbl00.textContent = "PB STOP";
-          lbl01.textContent = "PB START FWD";
-          lbl02.textContent = "PB START REV";
-          lamp01.textContent = "RUN FWD";
-          lamp02.textContent = "RUN REV";
-        } else if (currentProgram === "DOL") {
-          lbl00.textContent = "PB STOP";
-          lbl01.textContent = "PB START";
-          lbl02.textContent = "(TAK DIPAKAI)";
-          lamp01.textContent = "MOTOR JALAN";
-          lamp02.textContent = "(TAK DIPAKAI)";
-        } else if (currentProgram === "JOGGING") {
-          lbl00.textContent = "(TAK DIPAKAI)";
-          lbl01.textContent = "JOG FWD";
-          lbl02.textContent = "JOG REV";
-          lamp01.textContent = "JOG FWD ACTIVE";
-          lamp02.textContent = "JOG REV ACTIVE";
+      // --- ENGINE INTERPRETER MNEMONIC DINAMIS ---
+      function getBitValue(addr) {
+        if (!addr) return false;
+        addr = addr.trim().toUpperCase();
+        if (addr.startsWith("W")) {
+          return !!plcMemory.workBits[addr];
+        } else if (addr.startsWith("100.")) {
+          return !!plcMemory.outputs[addr];
+        } else {
+          // Format input standar seperti 0.00 atau 0.01
+          if (!addr.includes(".")) {
+            let num = parseInt(addr, 10);
+            addr = "0." + (num < 10 ? "0" + num : num);
+          }
+          return !!plcMemory.inputs[addr];
         }
+      }
 
+      function setBitValue(addr, val) {
+        if (!addr) return;
+        addr = addr.trim().toUpperCase();
+        if (addr.startsWith("W")) {
+          plcMemory.workBits[addr] = val;
+        } else if (addr.startsWith("100.")) {
+          plcMemory.outputs[addr] = val;
+        }
+      }
+
+      function executeMnemonicInterpreter() {
+        const lines = activeMnemonicCode.split("\n");
+        let accumulator = false;
+
+        lines.forEach((line) => {
+          let trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("//")) return; // Abaikan komentar/baris kosong
+
+          // Memisahkan kata kunci instruksi & alamat operand
+          let parts = trimmed.split(/\s+/);
+          let op = parts[0].toUpperCase();
+          let op2 = parts[1] ? parts[1].toUpperCase() : "";
+
+          // Mengakomodasi format bertingkat dua kata (misal: "LD NOT", "AND NOT")
+          let instruction = op;
+          let addr = op2;
+
+          if (
+            (op === "LD" || op === "AND" || op === "OR" || op === "OUT") &&
+            op2 === "NOT"
+          ) {
+            instruction = op + " NOT";
+            addr = parts[2] ? parts[2].toUpperCase() : "";
+          }
+
+          if (instruction === "END") return;
+
+          let bitVal = getBitValue(addr);
+
+          switch (instruction) {
+            case "LD":
+              accumulator = bitVal;
+              break;
+            case "LD NOT":
+              accumulator = !bitVal;
+              break;
+            case "AND":
+              accumulator = accumulator && bitVal;
+              break;
+            case "AND NOT":
+              accumulator = accumulator && !bitVal;
+              break;
+            case "OR":
+              accumulator = accumulator || bitVal;
+              break;
+            case "OR NOT":
+              accumulator = accumulator || !bitVal;
+              break;
+            case "OUT":
+              setBitValue(addr, accumulator);
+              break;
+            case "OUT NOT":
+              setBitValue(addr, !accumulator);
+              break;
+            case "SET":
+              if (accumulator) setBitValue(addr, true);
+              break;
+            case "RST":
+              if (accumulator) setBitValue(addr, false);
+              break;
+          }
+        });
+      }
+
+      function loadPresetProgram() {
+        const val = document.getElementById("program-select").value;
+        if (PRESET_PROGRAMS[val]) {
+          activeMnemonicCode = PRESET_PROGRAMS[val];
+          evaluateCircuit();
+        }
+      }
+
+      function openProgramEditor() {
+        document.getElementById("code-editor").value = activeMnemonicCode;
+        document.getElementById("editor-status").textContent = "Siap.";
+        document.getElementById("editor-status").style.color = "#00e676";
+        document.getElementById("prog-modal").style.display = "flex";
+      }
+
+      function closeProgramEditor(e) {
+        if (e && e.target !== document.getElementById("prog-modal")) return;
+        document.getElementById("prog-modal").style.display = "none";
+      }
+
+      function applyCustomProgram() {
+        const code = document.getElementById("code-editor").value;
+        activeMnemonicCode = code;
+        document.getElementById("prog-modal").style.display = "none";
         evaluateCircuit();
       }
 
@@ -1472,34 +1744,33 @@
         applyTransform(true);
       }
 
-      // Auto-fit responsive khusus HP & Desktop
       function resetZoomPan() {
         const vW = viewport.clientWidth;
         const vH = viewport.clientHeight;
         const baseW = 1120;
         const baseH = 640;
-        // Skala otomatis agar seluruh modul pas terlihat tanpa scroll
         scale = Math.min(vW / baseW, vH / baseH) * 0.94;
         panX = (vW - baseW * scale) / 2;
         panY = (vH - baseH * scale) / 2;
         applyTransform(true);
       }
 
-      window.addEventListener("resize", () => {
-        resetZoomPan();
-      });
-      window.addEventListener("orientationchange", () => {
-        setTimeout(resetZoomPan, 300);
-      });
+      window.addEventListener("resize", resetZoomPan);
+      window.addEventListener("orientationchange", () =>
+        setTimeout(resetZoomPan, 300),
+      );
 
-      // Pan & Zoom Engine
+      // Pan & Zoom Event Listeners
       viewport.addEventListener(
         "touchstart",
         (e) => {
           if (draggingHandle) return;
-          if (e.target.closest(".terminal, .push-btn, .mcb-switch, .waypoint-handle, .wire-hitbox")) {
+          if (
+            e.target.closest(
+              ".terminal, .push-btn, .mcb-switch, .waypoint-handle, .wire-hitbox",
+            )
+          )
             return;
-          }
 
           if (e.touches.length === 2) {
             isPinching = true;
@@ -1647,8 +1918,7 @@
           btn.classList.add("active");
           btn.textContent = "✖ Titik";
           viewport.classList.add("addpt-cursor");
-          stat.textContent =
-            "ALAT TITIK: Sentuh kabel untuk menambah belokan";
+          stat.textContent = "ALAT TITIK: Sentuh kabel untuk menambah belokan";
           stat.style.color = "#f39c12";
         } else {
           btn.classList.remove("active");
@@ -1756,9 +2026,7 @@
       }
 
       document.querySelectorAll(".terminal").forEach((term) => {
-        term.addEventListener("click", (e) => {
-          handleTerminalSelect(term, e);
-        });
+        term.addEventListener("click", (e) => handleTerminalSelect(term, e));
         term.addEventListener("touchend", (e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -1921,7 +2189,9 @@
           };
 
           handle.addEventListener("mousedown", onDragStart);
-          handle.addEventListener("touchstart", onDragStart, { passive: false });
+          handle.addEventListener("touchstart", onDragStart, {
+            passive: false,
+          });
           handle.addEventListener("contextmenu", (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -1961,11 +2231,8 @@
 
       window.addEventListener("mousemove", onHandleMove);
       window.addEventListener("touchmove", onHandleMove, { passive: false });
-      const onHandleEnd = () => {
-        draggingHandle = null;
-      };
-      window.addEventListener("mouseup", onHandleEnd);
-      window.addEventListener("touchend", onHandleEnd);
+      window.addEventListener("mouseup", () => (draggingHandle = null));
+      window.addEventListener("touchend", () => (draggingHandle = null));
 
       function undoLastWire() {
         if (wires.length === 0) return;
@@ -1989,8 +2256,8 @@
 
       function saveWiring() {
         const exportData = {
-          version: "2.2",
-          program: currentProgram,
+          version: "3.0",
+          mnemonicCode: activeMnemonicCode,
           wires: wires.map((w) => ({
             from: w.from,
             to: w.to,
@@ -2004,7 +2271,7 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `plc_wiring_${Date.now()}.json`;
+        a.download = `plc_wiring_mnemonic_${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(url);
       }
@@ -2018,10 +2285,8 @@
             const importedData = JSON.parse(e.target.result);
             if (!importedData.wires) return;
             clearAllWires();
-            if (importedData.program) {
-              document.getElementById("program-select").value =
-                importedData.program;
-              changePLCProgram();
+            if (importedData.mnemonicCode) {
+              activeMnemonicCode = importedData.mnemonicCode;
             }
             importedData.wires.forEach((w) => {
               const termA = document.querySelector(`[data-id="${w.from}"]`);
@@ -2044,17 +2309,25 @@
 
       function bindButtonTouch(elemId, code) {
         const btn = document.getElementById(elemId);
-        btn.addEventListener("touchstart", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setButtonState(code, true);
-        }, { passive: false });
+        btn.addEventListener(
+          "touchstart",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setButtonState(code, true);
+          },
+          { passive: false },
+        );
 
-        btn.addEventListener("touchend", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          setButtonState(code, false);
-        }, { passive: false });
+        btn.addEventListener(
+          "touchend",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setButtonState(code, false);
+          },
+          { passive: false },
+        );
 
         btn.addEventListener("mousedown", () => setButtonState(code, true));
         btn.addEventListener("mouseup", () => setButtonState(code, false));
@@ -2140,6 +2413,7 @@
         PLC_OUT_07: "PLC_OUT_COM3",
       };
 
+      // EVALUASI RANGKAIAN KELISTRIKAN & EXECUTE LOGIKA PLC
       function evaluateCircuit() {
         const acShortDirect = areNodesConnected("PLN_LINE", "PLN_NEUTRAL");
         const dcShortDirect = areNodesConnected("PSU_+V", "PSU_-V");
@@ -2171,74 +2445,58 @@
 
         const comToMinus =
           psuActive && areNodesConnected("PLC_IN_COM", "PSU_-V");
-        const comToPlus = psuActive && areNodesConnected("PLC_IN_COM", "PSU_+V");
+        const comToPlus =
+          psuActive && areNodesConnected("PLC_IN_COM", "PSU_+V");
 
-        let in00_active = false;
-        let in01_active = false;
-        let in02_active = false;
+        // RESET STATUS MEMORI INPUT PLC
+        for (let i = 0; i <= 11; i++) {
+          let addrKey = "0." + (i < 10 ? "0" + i : i);
+          let termId = "PLC_IN_" + (i < 10 ? "0" + i : i);
 
-        if (plcPowered) {
-          if (comToMinus) {
-            in00_active = areNodesConnected("PSU_+V", "PLC_IN_00");
-            in01_active = areNodesConnected("PSU_+V", "PLC_IN_01");
-            in02_active = areNodesConnected("PSU_+V", "PLC_IN_02");
-          } else if (comToPlus) {
-            in00_active = areNodesConnected("PSU_-V", "PLC_IN_00");
-            in01_active = areNodesConnected("PSU_-V", "PLC_IN_01");
-            in02_active = areNodesConnected("PSU_-V", "PLC_IN_02");
+          let isActive = false;
+          if (plcPowered) {
+            if (comToMinus) {
+              isActive = areNodesConnected("PSU_+V", termId);
+            } else if (comToPlus) {
+              isActive = areNodesConnected("PSU_-V", termId);
+            }
+          }
+          plcMemory.inputs[addrKey] = isActive;
+
+          let ledEl = document.getElementById(
+            "led-in-" + (i < 10 ? "0" + i : i),
+          );
+          if (ledEl) {
+            ledEl.className = "led" + (isActive ? " active-in" : "");
           }
         }
 
-        document.getElementById("led-in-00").className =
-          "led" + (in00_active ? " active-in" : "");
-        document.getElementById("led-in-01").className =
-          "led" + (in01_active ? " active-in" : "");
-        document.getElementById("led-in-02").className =
-          "led" + (in02_active ? " active-in" : "");
-
-        let out00_active = false;
-        let out01_active = false;
-        let out02_active = false;
-
+        // JIKAN PLC HIDUP, EKSEKUSI MNEMONIC INTERPRETER
         if (plcPowered) {
-          if (currentProgram === "FWD_REV") {
-            if (in00_active) {
-              plcInternalLogic.fwdLatched = false;
-              plcInternalLogic.revLatched = false;
+          executeMnemonicInterpreter();
+        } else {
+          // Bersihkan memori output jika PLC mati
+          plcMemory.outputs = {};
+        }
+
+        // UPDATE TAMPILAN LED OUTPUT RELAY PLC
+        for (let i = 0; i <= 7; i++) {
+          let addrKey = "100.0" + i;
+          let isOutActive = !!plcMemory.outputs[addrKey];
+
+          let ledEl = document.getElementById("led-out-0" + i);
+          if (ledEl) {
+            if (i === 0) {
+              ledEl.className = "led" + (isOutActive ? " active-out-red" : "");
             } else {
-              if (in01_active && !plcInternalLogic.revLatched)
-                plcInternalLogic.fwdLatched = true;
-              if (in02_active && !plcInternalLogic.fwdLatched)
-                plcInternalLogic.revLatched = true;
+              ledEl.className = "led" + (isOutActive ? " active-out" : "");
             }
-            out01_active = plcInternalLogic.fwdLatched;
-            out02_active = plcInternalLogic.revLatched;
-            out00_active = !out01_active && !out02_active;
-          } else if (currentProgram === "DOL") {
-            if (in00_active) {
-              plcInternalLogic.dolLatched = false;
-            } else if (in01_active) {
-              plcInternalLogic.dolLatched = true;
-            }
-            out01_active = plcInternalLogic.dolLatched;
-            out00_active = !plcInternalLogic.dolLatched;
-            out02_active = false;
-          } else if (currentProgram === "JOGGING") {
-            out01_active = in01_active && !in02_active;
-            out02_active = in02_active && !in01_active;
-            out00_active = !out01_active && !out02_active;
           }
         }
 
-        document.getElementById("led-out-00").className =
-          "led" + (out00_active ? " active-out-red" : "");
-        document.getElementById("led-out-01").className =
-          "led" + (out01_active ? " active-out" : "");
-        document.getElementById("led-out-02").className =
-          "led" + (out02_active ? " active-out" : "");
-
-        function checkLampLighting(lampL, lampN, isChannelActive) {
-          if (!isChannelActive) return false;
+        // EVALUASI SIRKUIT LAMPU INDIKATOR EKSTERNAL (AC)
+        function checkLampLighting(lampL, lampN, targetOutAddr) {
+          if (!plcMemory.outputs[targetOutAddr]) return false;
 
           const termLHasNeutral = areNodesConnected(lampL, "PLN_NEUTRAL");
           const termNHasNeutral = areNodesConnected(lampN, "PLN_NEUTRAL");
@@ -2260,9 +2518,7 @@
           for (let outNode of allOutputs) {
             if (areNodesConnected(lampOutputSide, outNode)) {
               const reqCom = outputComMap[outNode];
-              if (areNodesConnected("PLN_LINE", reqCom)) {
-                return true;
-              }
+              if (areNodesConnected("PLN_LINE", reqCom)) return true;
             }
           }
           return false;
@@ -2271,10 +2527,10 @@
         const isStandbyLit = checkLampLighting(
           "LP_SBY_L",
           "LP_SBY_N",
-          out00_active,
+          "100.00",
         );
-        const isFwdLit = checkLampLighting("LP_FWD_L", "LP_FWD_N", out01_active);
-        const isRevLit = checkLampLighting("LP_REV_L", "LP_REV_N", out02_active);
+        const isFwdLit = checkLampLighting("LP_FWD_L", "LP_FWD_N", "100.01");
+        const isRevLit = checkLampLighting("LP_REV_L", "LP_REV_N", "100.02");
 
         document.getElementById("lamp-standby").className =
           "pilot-lamp lamp-red" + (isStandbyLit ? " lit" : "");
@@ -2283,6 +2539,7 @@
         document.getElementById("lamp-rev").className =
           "pilot-lamp lamp-yellow" + (isRevLit ? " lit" : "");
 
+        // ANIMASI ENERGIZED KABEL
         wires.forEach((w) => {
           w.pathVisible.classList.remove("wire-energized", "wire-energized-ac");
           if (!isLiveTrace || isMcbTripped || !isMcbOn) return;
@@ -2307,8 +2564,7 @@
           stat.textContent = "MCB TRIP!";
           stat.style.color = "#ff1744";
         } else if (isAddPointMode) {
-          stat.textContent =
-            "ALAT TITIK: Sentuh kabel";
+          stat.textContent = "ALAT TITIK: Sentuh kabel";
           stat.style.color = "#f39c12";
         } else if (isDeleteMode) {
           stat.textContent = "MODE HAPUS AKTIF";
@@ -2320,7 +2576,7 @@
           stat.textContent = "STATUS: PSU MATI";
           stat.style.color = "#ff9800";
         } else {
-          stat.textContent = `STATUS: ${currentProgram} RUNNING`;
+          stat.textContent = `STATUS: PROGRAM RUNNING`;
           stat.style.color = "#00e676";
         }
       }
@@ -2362,14 +2618,6 @@
           areNodesConnected("PLC_IN_01", "PB1_T1") ||
           areNodesConnected("PLC_IN_01", "PB1_T2");
 
-        const pbRevFeed = buttonPolarityNode
-          ? areNodesConnected(buttonPolarityNode, "PB2_T1") ||
-            areNodesConnected(buttonPolarityNode, "PB2_T2")
-          : false;
-        const pbRevTo02 =
-          areNodesConnected("PLC_IN_02", "PB2_T1") ||
-          areNodesConnected("PLC_IN_02", "PB2_T2");
-
         function checkLampWiringDiag(lampL, lampN) {
           const termLHasNeutral = areNodesConnected(lampL, "PLN_NEUTRAL");
           const termNHasNeutral = areNodesConnected(lampN, "PLN_NEUTRAL");
@@ -2397,7 +2645,6 @@
 
         const lampStandby_ok = checkLampWiringDiag("LP_SBY_L", "LP_SBY_N");
         const lampFwd_ok = checkLampWiringDiag("LP_FWD_L", "LP_FWD_N");
-        const lampRev_ok = checkLampWiringDiag("LP_REV_L", "LP_REV_N");
 
         let checks = [
           {
@@ -2422,94 +2669,35 @@
             name: "Common Input PLC",
             ok: comInputOk,
             msg: comToPlus
-              ? "Terminal COM Input terhubung ke +V (Sinking/NPN Mode)"
-              : "Terminal COM Input terhubung ke -V (Sourcing/PNP Mode)",
+              ? "Terminal COM Input terhubung ke +V (Sinking Mode)"
+              : "Terminal COM Input terhubung ke -V (Sourcing Mode)",
             err: "Terminal COM Input atas belum disambung ke +V atau -V PSU.",
           },
           {
-            name: "Lampu Merah Standby",
+            name: "Wiring PB STOP (0.00)",
+            ok: pbStopFeed && pbStopTo00,
+            msg: "Tombol STOP terhubung ke Input 00",
+            err: "Tombol STOP belum terhubung antara polaritas lawan COM dan terminal 00.",
+          },
+          {
+            name: "Wiring PB START (0.01)",
+            ok: pbFwdFeed && pbFwdTo01,
+            msg: "Tombol START terhubung ke Input 01",
+            err: "Tombol START belum terhubung antara polaritas lawan COM dan terminal 01.",
+          },
+          {
+            name: "Lampu Merah Standby (100.00)",
             ok: lampStandby_ok,
             msg: "Rangkaian Lampu Standby terhubung ke terminal Output & Netral lengkap",
-            err: "Kabel Lampu Merah Standby belum lengkap (pastikan COM output pasangan dialiri Fasa dan ujung lainnya ke Netral).",
+            err: "Kabel Lampu Standby belum lengkap terpasang ke Output & Netral.",
+          },
+          {
+            name: "Lampu Hijau RUN (100.01)",
+            ok: lampFwd_ok,
+            msg: "Rangkaian Lampu RUN lengkap",
+            err: "Lampu Hijau RUN belum tersambung ke terminal Output & Netral.",
           },
         ];
-
-        if (currentProgram === "FWD_REV") {
-          checks.push(
-            {
-              name: "Wiring PB STOP (00)",
-              ok: pbStopFeed && pbStopTo00,
-              msg: "Tombol STOP terhubung ke Input 00 dengan polaritas yang sesuai",
-              err: "Tombol STOP belum terhubung antara polaritas lawan COM dan terminal 00.",
-            },
-            {
-              name: "Wiring PB FWD (01)",
-              ok: pbFwdFeed && pbFwdTo01,
-              msg: "Tombol START FWD terhubung ke Input 01 dengan polaritas yang sesuai",
-              err: "Tombol FWD belum terhubung antara polaritas lawan COM dan terminal 01.",
-            },
-            {
-              name: "Wiring PB REV (02)",
-              ok: pbRevFeed && pbRevTo02,
-              msg: "Tombol START REV terhubung ke Input 02 dengan polaritas yang sesuai",
-              err: "Tombol REV belum terhubung antara polaritas lawan COM dan terminal 02.",
-            },
-            {
-              name: "Lampu Hijau FWD",
-              ok: lampFwd_ok,
-              msg: "Rangkaian Lampu FWD lengkap ke salah satu Output ber-COM Fasa & Netral",
-              err: "Lampu Hijau belum tersambung ke terminal output aktif & Netral.",
-            },
-            {
-              name: "Lampu Kuning REV",
-              ok: lampRev_ok,
-              msg: "Rangkaian Lampu REV lengkap ke salah satu Output ber-COM Fasa & Netral",
-              err: "Lampu Kuning belum tersambung ke terminal output aktif & Netral.",
-            },
-          );
-        } else if (currentProgram === "DOL") {
-          checks.push(
-            {
-              name: "Wiring PB STOP (00)",
-              ok: pbStopFeed && pbStopTo00,
-              msg: "Tombol STOP terhubung ke Input 00",
-              err: "Tombol STOP belum terhubung.",
-            },
-            {
-              name: "Wiring PB START (01)",
-              ok: pbFwdFeed && pbFwdTo01,
-              msg: "Tombol START terhubung ke Input 01",
-              err: "Tombol START belum terhubung.",
-            },
-            {
-              name: "Lampu Hijau Motor",
-              ok: lampFwd_ok,
-              msg: "Lampu Motor Running lengkap",
-              err: "Rangkaian Lampu Motor Running belum lengkap.",
-            },
-          );
-        } else if (currentProgram === "JOGGING") {
-          checks.push(
-            {
-              name: "Wiring PB JOG FWD (01)",
-              ok: pbFwdFeed && pbFwdTo01,
-              msg: "Tombol JOG FWD terhubung ke Input 01",
-              err: "Tombol JOG FWD belum tersambung ke terminal 01.",
-            },
-            {
-              name: "Wiring PB JOG REV (02)",
-              ok: pbRevFeed && pbRevTo02,
-              msg: "Tombol JOG REV terhubung ke Input 02",
-              err: "Tombol JOG REV belum tersambung ke terminal 02.",
-            },
-            {
-              name: "Lampu JOG FWD & REV",
-              ok: lampFwd_ok && lampRev_ok,
-              msg: "Lampu JOG FWD & REV lengkap",
-              err: "Salah satu lampu Jog belum lengkap terpasang.",
-            },
-          );
-        }
 
         checks.forEach((c) => {
           const item = document.createElement("div");
@@ -2526,11 +2714,11 @@
         diagModal.style.display = "flex";
       }
 
-      function closeDiagnostics() {
+      function closeDiagnostics(e) {
+        if (e && e.target !== document.getElementById("diag-modal")) return;
         document.getElementById("diag-modal").style.display = "none";
       }
 
-      // Inisialisasi awal pas layar
       window.addEventListener("load", () => {
         resetZoomPan();
         evaluateCircuit();
