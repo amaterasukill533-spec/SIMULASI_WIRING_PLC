@@ -6,9 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes"
     />
-    <title>
-      PLC Wiring Simulator v36 - 2D Industrial Workbench
-    </title>
+    <title>PLC Wiring Simulator v41 - Visible Connections & Clean Wiring</title>
     <!-- Font Industri & Teknikal -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -92,11 +90,8 @@
           transform: rotate(-90deg);
         }
       }
-      @media screen and (orientation: portrait) and (max-width: 850px) {
-        #landscape-hint {
-          display: flex;
-        }
-      }
+      /* v40: mode portrait tetap didukung; jangan menutup workbench dengan overlay. */
+      #landscape-hint { display: none !important; }
 
       /* TOOLBAR UTAMA RINGKAS */
       #toolbar {
@@ -380,7 +375,7 @@
         top: 0;
         left: 0;
         width: 1420px;
-        height: 880px;
+        height: 1120px;
         transform-origin: 0 0;
         will-change: transform;
       }
@@ -436,6 +431,24 @@
         stroke: #ffffff;
         stroke-width: 1.5px;
       }
+      /* Titik belok kuning dapat disembunyikan agar jalur kabel terlihat utuh. */
+      body.hide-waypoint-handles .waypoint-handle {
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      .waypoint-handle { transition: opacity .12s ease; }
+      /* Terminal yang benar-benar terhubung mendapat cincin hijau kebiruan,
+         sehingga ujung kabel mudah dibaca pada komponen yang padat. */
+      .terminal.has-wire::before {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border: 2px solid #0f766e;
+        border-radius: 50%;
+        box-shadow: 0 0 0 2px rgba(255,255,255,.92), 0 0 5px rgba(15,118,110,.35);
+        pointer-events: none;
+        z-index: 1;
+      }
 
       /* KOMPONEN HARDWARE */
       .component {
@@ -446,6 +459,9 @@
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
         z-index: 5;
       }
+      /* Geser perangkat dari header tanpa mengganggu terminal atau tombol. */
+      .component .comp-header, #busbar-pln { cursor: grab; touch-action: none; user-select: none; }
+      .component.is-dragging, #busbar-pln.is-dragging { cursor: grabbing; opacity: .88; z-index: 30; }
 
       .comp-header {
         font-family: "Fira Code", monospace;
@@ -848,13 +864,20 @@
         flex-direction: column;
         justify-content: space-between;
       }
+      /* TOR dipasang tepat di bawah kontaktor, seperti rakitan kontaktor + overload relay di panel nyata. */
+      .tor-comp {
+        height: 240px;
+        background: linear-gradient(145deg, #f8fafc 0%, #d9e0e8 48%, #c3ccd6 100%);
+        border: 1px solid #8795a5;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 3px 7px rgba(26,39,54,.13);
+      }
       #tor-1 {
-        left: 1080px;
-        top: 275px;
+        left: 775px;
+        top: 552px;
       }
       #tor-2 {
-        left: 1225px;
-        top: 275px;
+        left: 925px;
+        top: 552px;
       }
 
       .tor-trip-btn {
@@ -886,33 +909,33 @@
         justify-content: space-between;
         align-items: center;
       }
-      #motor-m1 {
-        left: 775px;
-        top: 560px;
-      }
-      #motor-m2 {
-        left: 1080px;
-        top: 560px;
-      }
+      #motor-m1 { left: 1090px; top: 275px; }
+      #motor-m2 { left: 1090px; top: 570px; }
 
       .motor-visual {
-        width: 105px;
-        height: 105px;
-        background: #181b22;
-        border: 3px solid #333a48;
+        width: 142px;
+        height: 100px;
+        background: linear-gradient(180deg, #4b6475 0%, #263946 46%, #172a34 100%);
+        border: 3px solid #15232c;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         position: relative;
-        box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8);
+        box-shadow: inset 0 7px 10px rgba(255,255,255,.18), inset 0 -11px 16px rgba(0,0,0,.42), 0 5px 8px rgba(0,0,0,.32);
       }
+      .motor-visual::before { content:""; position:absolute; left:-19px; width:22px; height:58px; border:3px solid #15232c; border-right:0; border-radius:10px 0 0 10px; background:linear-gradient(90deg,#496170,#20333e); }
+      .motor-visual::after { content:""; position:absolute; right:-30px; width:32px; height:14px; border:3px solid #15232c; border-left:0; border-radius:0 9px 9px 0; background:#8e9aa2; box-shadow:18px 0 0 -3px #344854; }
+      .motor-fins { position:absolute; inset:12px 24px; opacity:.42; background:repeating-linear-gradient(90deg, rgba(196,220,229,.5) 0 3px, transparent 3px 11px); border-radius:38%; pointer-events:none; }
+      .motor-foot { position:absolute; bottom:-15px; width:106px; height:13px; background:#263842; border:3px solid #15232c; border-radius:3px 3px 7px 7px; }
+      .motor-nameplate { position:absolute; top:14px; left:17px; padding:2px 5px; border:1px solid #96a8af; border-radius:2px; color:#dce8ec; background:#1b2b33; font:700 7px "Fira Code", monospace; z-index:2; }
       .motor-rotor {
-        width: 68px;
-        height: 68px;
-        border: 3px dashed var(--accent-teal);
+        width: 60px;
+        height: 60px;
+        border: 4px dashed #8db5c4;
         border-radius: 50%;
         position: absolute;
+        z-index: 1;
       }
       @keyframes spinCW {
         from {
@@ -1236,6 +1259,176 @@
       .diag-item small { display:block; color:#64748b; margin-top:3px; line-height:1.45; }
       #sim-toast { position:fixed; right:18px; bottom:18px; z-index:10000; max-width:min(390px,calc(100vw - 36px)); padding:11px 15px; border:1px solid #cbd5e1; border-radius:9px; background:#fff; color:#1e293b; box-shadow:0 8px 28px rgba(15,23,42,.18); font:600 13px/1.45 system-ui,sans-serif; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .18s ease,transform .18s ease; }
       #sim-toast.show { opacity:1; transform:translateY(0); }
+
+      /* PANEL PENGKABELAN STEP-BY-STEP */
+      #step-wire-panel {
+        display: none;
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        z-index: 950;
+        width: min(560px, calc(100vw - 24px));
+        background: #ffffff;
+        color: #1e293b;
+        border: 1.5px solid #94a3b8;
+        border-radius: 12px;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.24);
+        padding: 12px 14px;
+        font-family: "Inter", system-ui, sans-serif;
+      }
+      #step-wire-panel.show {
+        display: block;
+      }
+      .swp-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .swp-title {
+        font-family: "Fira Code", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swp-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+        font-family: "Fira Code", monospace;
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 999px;
+      }
+      .swp-progress-track {
+        width: 100%;
+        height: 6px;
+        background: #e2e8f0;
+        border-radius: 999px;
+        overflow: hidden;
+        margin-bottom: 9px;
+      }
+      .swp-progress-bar {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #0284c7, #10b981);
+        border-radius: 999px;
+        transition: width 0.2s ease;
+      }
+      .swp-info {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 10px;
+        font-size: 11.5px;
+        line-height: 1.45;
+      }
+      .swp-step-cat {
+        font-family: "Fira Code", monospace;
+        font-size: 10px;
+        font-weight: 700;
+        color: #0284c7;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .swp-color-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 1px solid rgba(0,0,0,0.25);
+      }
+      .swp-step-desc {
+        font-weight: 600;
+        color: #1e293b;
+      }
+      .swp-step-next {
+        font-size: 10.5px;
+        color: #64748b;
+        margin-top: 3px;
+      }
+      .swp-controls {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .swp-btn-group {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+      }
+      .swp-btn {
+        background: #f1f5f9 !important;
+        color: #1e293b !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 5px 10px !important;
+        font-size: 11px !important;
+        font-weight: 600 !important;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 30px;
+      }
+      .swp-btn:hover:not(:disabled) {
+        background: #e2e8f0 !important;
+        border-color: #94a3b8 !important;
+      }
+      .swp-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .swp-btn-primary {
+        background: #0284c7 !important;
+        color: #ffffff !important;
+        border-color: #0369a1 !important;
+      }
+      .swp-btn-primary:hover:not(:disabled) {
+        background: #0369a1 !important;
+        color: #ffffff !important;
+      }
+      .swp-btn-play.playing {
+        background: #fef3c7 !important;
+        color: #b45309 !important;
+        border-color: #f59e0b !important;
+      }
+      .swp-speed-select {
+        height: 30px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0 6px;
+        font-size: 11px;
+        font-family: "Fira Code", monospace;
+        background: #fff;
+        color: #334155;
+      }
+      @keyframes pulseStepTerm {
+        0%, 100% { transform: scale(1.22); box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.35), 0 0 14px #0284c7; }
+        50% { transform: scale(1.38); box-shadow: 0 0 0 7px rgba(16, 185, 129, 0.45), 0 0 20px #10b981; }
+      }
+      .terminal.step-highlight {
+        border-color: #0284c7 !important;
+        animation: pulseStepTerm 1s ease-in-out infinite !important;
+        z-index: 35 !important;
+      }
+      .wire-group.wire-step-latest .wire-contrast {
+        stroke: #bae6fd !important;
+        stroke-width: 9px !important;
+      }
       .component .comp-header { user-select:none; }
       #plc { background:linear-gradient(145deg,#20252b 0%,#101418 70%,#272d34 100%) !important; border:2px solid #59636d !important; box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 5px 12px rgba(15,23,42,.22) !important; }
       #plc .plc-mid, #plc .plc-led-panel, #plc .plc-terminal-area, #plc .plc-output-area { border-color:#39434d !important; }
@@ -1343,11 +1536,46 @@
         box-shadow:inset 0 1px 2px rgba(255,255,255,.95),0 1px 2px rgba(15,23,42,.3) !important;
       }
       #contactor-k1 .terminal::after, #contactor-k2 .terminal::after, #tor-1 .terminal::after, #tor-2 .terminal::after { background:#344150 !important; }
-      #viewport-container { cursor:grab; touch-action:none; }
+      #viewport-container { cursor:grab; touch-action:none; overscroll-behavior:contain; }
       #viewport-container.panning { cursor:grabbing; }
+
+      /* v40: toolbar adaptif untuk layar kecil dan landscape ponsel */
+      #toolbar { min-width:0; max-width:100vw; gap:8px; }
+      .tb-left,.tb-center,.tb-right { min-width:0; flex-shrink:0; }
+      @media (max-width: 760px) {
+        #toolbar {
+          height:auto !important; min-height:0; max-height:30dvh;
+          padding:6px 7px !important; display:grid !important;
+          grid-template-columns:minmax(0,1fr) auto; grid-template-areas:"brand menu" "tools tools";
+          align-items:center; gap:6px; overflow-x:hidden; overflow-y:auto;
+        }
+        .tb-left { grid-area:brand; min-width:0; gap:5px !important; overflow:hidden; }
+        .tb-left .brand-badge { font-size:10px !important; padding:5px 7px !important; white-space:nowrap; }
+        #status-bar { font-size:9px !important; padding:4px 6px !important; letter-spacing:0 !important; white-space:normal; line-height:1.25; }
+        .tb-center { grid-area:tools; width:100%; display:flex; flex-wrap:nowrap; overflow-x:auto; overflow-y:hidden; gap:5px !important; padding:1px 0 3px; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+        .tb-right { grid-area:menu; justify-self:end; }
+        .tb-center .btn { flex:0 0 auto; min-height:34px; height:34px; padding:6px 9px !important; font-size:11px !important; white-space:nowrap; }
+        .color-picker { flex:0 0 auto; }
+        .zoom-controls { flex:0 0 auto; min-height:34px; }
+        .zoom-btn { min-width:28px; min-height:28px; }
+        #zoom-label { width:44px !important; font-size:12px !important; }
+        .btn-more { min-width:36px; min-height:34px; }
+        #viewport-container { min-height:0; }
+      }
+      @media (max-width: 760px) and (orientation: portrait) {
+        #toolbar { max-height:25dvh; }
+        .tb-left .brand-badge { max-width:46vw; overflow:hidden; text-overflow:ellipsis; }
+      }
+      @media (max-width: 950px) and (orientation: landscape) {
+        #toolbar { height:auto !important; min-height:44px; padding:4px 7px !important; gap:5px; }
+        .brand-badge { font-size:10px !important; }
+        .tb-left,.tb-center,.tb-right { gap:4px !important; }
+        .tb-center .btn { padding:5px 7px !important; }
+        #viewport-container { min-height:0; }
+      }
 </style>
   </head>
-  <body>
+  <body class="hide-waypoint-handles">
     <!-- Overlay Landscape -->
     <div id="landscape-hint">
       <div class="phone-icon-anim">📱 ➔ 🔄</div>
@@ -1385,7 +1613,7 @@
     <!-- NAVBAR TOOLBAR -->
     <div id="toolbar">
       <div class="tb-left">
-        <div class="brand-badge">CP1E WORKBENCH v3.8 · 2D</div>
+        <div class="brand-badge">CP1E WORKBENCH v4.2 · 2D</div>
         <div id="status-bar">STATUS: RUNNING</div>
       </div>
 
@@ -1405,6 +1633,9 @@
           title="Tambah Belokan Kabel"
         >
           📍 Titik
+        </button>
+        <button class="btn" id="btn-waypoint-visibility" onclick="toggleWaypointVisibility()" title="Tampilkan atau sembunyikan titik belok kuning">
+          ◉ Titik: OFF
         </button>
         <button
           class="btn"
@@ -2485,6 +2716,7 @@
         <div class="component motor-comp" id="motor-m1">
           <div class="comp-header">MOTOR 3-FASA M1 (FORWARD)</div>
           <div class="motor-visual">
+            <div class="motor-fins"></div><div class="motor-foot"></div><div class="motor-nameplate">3~ INDUCTION</div>
             <div class="motor-rotor" id="rotor-m1"></div>
             <span
               style="
@@ -2524,6 +2756,7 @@
         <div class="component motor-comp" id="motor-m2">
           <div class="comp-header">MOTOR 3-FASA M2 (REVERSE)</div>
           <div class="motor-visual">
+            <div class="motor-fins"></div><div class="motor-foot"></div><div class="motor-nameplate">3~ INDUCTION</div>
             <div class="motor-rotor" id="rotor-m2"></div>
             <span
               style="
@@ -2563,6 +2796,44 @@
 
     <div id="short-circuit-alert">
       ⚠️ BAHAYA: TERJADI KORSLETING! MCB TRIP OTOMATIS.
+    </div>
+
+    <!-- PANEL KONTROL PENGKABELAN STEP-BY-STEP -->
+    <div id="step-wire-panel" role="region" aria-label="Kontrol Pengkabelan Step-by-Step">
+      <div class="swp-header">
+        <div class="swp-title">
+          <span>⚡ Pengkabelan Step-by-Step</span>
+          <span class="swp-badge" id="swp-counter">0 / 0</span>
+        </div>
+        <button class="swp-btn" onclick="closeStepWirePanel()" title="Tutup panel Step-by-Step" style="padding: 2px 8px !important; height: 24px;">✕</button>
+      </div>
+      <div class="swp-progress-track">
+        <div class="swp-progress-bar" id="swp-progress-bar"></div>
+      </div>
+      <div class="swp-info">
+        <div class="swp-step-cat" id="swp-step-cat">
+          <span class="swp-color-dot" id="swp-color-dot" style="background:#e74c3c"></span>
+          <span id="swp-cat-text">SIAP MEMULAI</span>
+        </div>
+        <div class="swp-step-desc" id="swp-step-desc">Klik "Langkah Berikutnya" atau "Auto-Play" untuk memasang kabel satu per satu.</div>
+        <div class="swp-step-next" id="swp-step-next"></div>
+      </div>
+      <div class="swp-controls">
+        <div class="swp-btn-group">
+          <button class="swp-btn" id="swp-btn-reset" onclick="resetStepWire()" title="Ulang dari awal (0 kabel)">⏮ Reset</button>
+          <button class="swp-btn" id="swp-btn-prev" onclick="prevStepWire()" title="Cabut 1 kabel terakhir">◀ Sebelumnya</button>
+          <button class="swp-btn swp-btn-primary" id="swp-btn-next" onclick="nextStepWire()" title="Pasang 1 kabel berikutnya">▶ Langkah Berikutnya</button>
+        </div>
+        <div class="swp-btn-group">
+          <button class="swp-btn swp-btn-play" id="swp-btn-play" onclick="toggleAutoPlayStepWire()" title="Jalankan otomatis satu per satu dengan jeda waktu">⏯ Auto-Play</button>
+          <select class="swp-speed-select" id="swp-speed" title="Kecepatan Auto-Play" onchange="updateAutoPlaySpeed()">
+            <option value="1400">Lambat (1.4d)</option>
+            <option value="850" selected>Normal (0.85d)</option>
+            <option value="400">Cepat (0.4d)</option>
+          </select>
+          <button class="swp-btn" id="swp-btn-all" onclick="finishAllStepWires()" title="Pasang seluruh sisa kabel sekaligus">⏭ Semua</button>
+        </div>
+      </div>
     </div>
 
     <!-- MODAL GUIDE -->
@@ -2728,6 +2999,7 @@
 
       let wireIdCounter = 1;
       let draggingHandle = null;
+      let draggingComponent = null;
       // Riwayat undo menyimpan keadaan kabel sebelum setiap aksi (buat/hapus kabel/titik).
       const undoStack = [];
       let suppressUndoHistory = false;
@@ -2747,7 +3019,9 @@
 
       function currentWorkspaceData() {
         return { version: "3.7", preset: document.getElementById("program-select")?.value || "FWD_REV_CONTROL",
-          mnemonicCode: activeMnemonicCode, wires: wires.map(w => ({ from:w.from, to:w.to, color:w.color,
+          mnemonicCode: activeMnemonicCode,
+          components: Array.from(document.querySelectorAll(".component, #busbar-pln")).map(el => ({ id:el.id, left:el.style.left || null, top:el.style.top || null })),
+          wires: wires.map(w => ({ from:w.from, to:w.to, color:w.color,
             points:w.points.map(pt => ({x:pt.x,y:pt.y})), autoRouted:!!w.autoRouted })) };
       }
 
@@ -2767,6 +3041,7 @@
           loadPresetProgram();
         }
         if (data.mnemonicCode) activeMnemonicCode = String(data.mnemonicCode);
+        if (Array.isArray(data.components)) data.components.forEach(pos => { const el=document.getElementById(pos.id); if (el && pos.left && pos.top) { el.style.left=pos.left; el.style.top=pos.top; } });
         suppressUndoHistory = true;
         wires.forEach(w => w.groupEl?.remove()); wires = [];
         data.wires.forEach(w => {
@@ -2788,16 +3063,51 @@
 
       function describeTerminal(id) {
         const known = {
-          PLN_L1:"PLN L1 — fasa", PLN_L2:"PLN L2 — fasa", PLN_L3:"PLN L3 — fasa", PLN_NEUTRAL:"PLN N — netral",
-          MCB_IN:"MCB 1P — input fasa", MCB_OUT:"MCB 1P — output fasa", MCBN_IN:"MCB netral — input", MCBN_OUT:"MCB netral — output",
-          MCB3_IN_L1:"MCB 3 fasa — input L1", MCB3_IN_L2:"MCB 3 fasa — input L2", MCB3_IN_L3:"MCB 3 fasa — input L3",
-          PSU_AC_L:"PSU — input AC L", PSU_AC_N:"PSU — input AC N", "PSU_+V":"PSU — +24 V DC", "PSU_-V":"PSU — 0 V DC",
-          PLC_L1:"PLC CP1E — suplai L1", PLC_L2N:"PLC CP1E — suplai L2/N", PLC_IN_COM:"PLC — COM input",
-          PB0_T1:"Push button STOP — terminal 1", PB0_T2:"Push button STOP — terminal 2", PB1_T1:"Push button FORWARD — terminal 1", PB1_T2:"Push button FORWARD — terminal 2", PB2_T1:"Push button REVERSE — terminal 1", PB2_T2:"Push button REVERSE — terminal 2",
-          K1_A1:"Kontaktor K1 — coil A1", K1_A2:"Kontaktor K1 — coil A2", K2_A1:"Kontaktor K2 — coil A1", K2_A2:"Kontaktor K2 — coil A2",
-          TOR1_95:"TOR 1 — kontak NC 95", TOR1_96:"TOR 1 — kontak NC 96", TOR2_95:"TOR 2 — kontak NC 95", TOR2_96:"TOR 2 — kontak NC 96"
+          PLN_L1:"PLN L1 (R) — fasa", PLN_L2:"PLN L2 (S) — fasa", PLN_L3:"PLN L3 (T) — fasa", PLN_NEUTRAL:"PLN N — netral",
+          MCB_IN:"MCB 1P — input fasa", MCB_OUT:"MCB 1P — output fasa", MCBN_IN:"MCB Netral — input N", MCBN_OUT:"MCB Netral — output N",
+          MCB3_IN_L1:"MCB 3P — input R (L1)", MCB3_IN_L2:"MCB 3P — input S (L2)", MCB3_IN_L3:"MCB 3P — input T (L3)",
+          MCB3_OUT_L1:"MCB 3P — output R (L1)", MCB3_OUT_L2:"MCB 3P — output S (L2)", MCB3_OUT_L3:"MCB 3P — output T (L3)",
+          PSU_AC_L:"PSU 24V — input AC L", PSU_AC_N:"PSU 24V — input AC N", "PSU_+V":"PSU — +24V DC", "PSU_-V":"PSU — 0V (-V) DC",
+          PLC_L1:"PLC CP1E — suplai AC L1", PLC_L2N:"PLC CP1E — suplai AC L2/N", PLC_IN_COM:"PLC — COM Input",
+          PLC_IN_00:"PLC Input 00 (Stop)", PLC_IN_01:"PLC Input 01 (Start/Fwd)", PLC_IN_02:"PLC Input 02 (Rev/Jog)",
+          PLC_OUT_COM0:"PLC — COM0 Output", PLC_OUT_COM1:"PLC — COM1 Output", PLC_OUT_COM2:"PLC — COM2 Output", PLC_OUT_COM3:"PLC — COM3 Output",
+          PLC_OUT_00:"PLC Output 100.00", PLC_OUT_01:"PLC Output 100.01", PLC_OUT_02:"PLC Output 100.02",
+          PLC_OUT_03:"PLC Output 100.03", PLC_OUT_04:"PLC Output 100.04", PLC_OUT_05:"PLC Output 100.05", PLC_OUT_06:"PLC Output 100.06",
+          PB0_T1:"PB STOP (00) — T1", PB0_T2:"PB STOP (00) — T2",
+          PB1_T1:"PB START/FWD (01) — T1", PB1_T2:"PB START/FWD (01) — T2",
+          PB2_T1:"PB REV/JOG (02) — T1", PB2_T2:"PB REV/JOG (02) — T2",
+          LP_SBY_L:"Lampu Merah (Standby) — L", LP_SBY_N:"Lampu Merah (Standby) — N",
+          LP_FWD_L:"Lampu Hijau (Fwd) — L", LP_FWD_N:"Lampu Hijau (Fwd) — N",
+          LP_REV_L:"Lampu Kuning (Rev) — L", LP_REV_N:"Lampu Kuning (Rev) — N",
+          K1_A1:"Kontaktor K1 — Koil A1", K1_A2:"Kontaktor K1 — Koil A2",
+          K1_L1:"Kontaktor K1 — Kontak Utama L1", K1_L2:"Kontaktor K1 — Kontak Utama L2", K1_L3:"Kontaktor K1 — Kontak Utama L3",
+          K1_T1:"Kontaktor K1 — Kontak Utama T1", K1_T2:"Kontaktor K1 — Kontak Utama T2", K1_T3:"Kontaktor K1 — Kontak Utama T3",
+          K2_A1:"Kontaktor K2 — Koil A1", K2_A2:"Kontaktor K2 — Koil A2",
+          K2_L1:"Kontaktor K2 — Kontak Utama L1", K2_L2:"Kontaktor K2 — Kontak Utama L2", K2_L3:"Kontaktor K2 — Kontak Utama L3",
+          K2_T1:"Kontaktor K2 — Kontak Utama T1", K2_T2:"Kontaktor K2 — Kontak Utama T2", K2_T3:"Kontaktor K2 — Kontak Utama T3",
+          TOR1_95:"TOR 1 — Kontak NC 95", TOR1_96:"TOR 1 — Kontak NC 96",
+          TOR1_T1:"TOR 1 — Input Daya T1", TOR1_T2:"TOR 1 — Input Daya T2", TOR1_T3:"TOR 1 — Input Daya T3",
+          TOR1_U:"TOR 1 — Output Daya U", TOR1_V:"TOR 1 — Output Daya V", TOR1_W:"TOR 1 — Output Daya W",
+          TOR2_95:"TOR 2 — Kontak NC 95", TOR2_96:"TOR 2 — Kontak NC 96",
+          TOR2_T1:"TOR 2 — Input Daya T1", TOR2_T2:"TOR 2 — Input Daya T2", TOR2_T3:"TOR 2 — Input Daya T3",
+          TOR2_U:"TOR 2 — Output Daya U", TOR2_V:"TOR 2 — Output Daya V", TOR2_W:"TOR 2 — Output Daya W",
+          M1_U:"Motor M1 — Terminal U1", M1_V:"Motor M1 — Terminal V1", M1_W:"Motor M1 — Terminal W1",
+          M2_U:"Motor M2 — Terminal U2", M2_V:"Motor M2 — Terminal V2", M2_W:"Motor M2 — Terminal W2"
         };
         return known[id] || (String(id || "").replaceAll("_", " ") + " — terminal komponen");
+      }
+
+      function describeWireCategory(fromId, toId) {
+        const pair = `${fromId}|${toId}`;
+        if (/MCB3_|K[12]_(L|T)[123]|TOR[12]_(T[123]|U|V|W)|M[12]_[UVW]/.test(pair)) return "RANGKAIAN DAYA MOTOR 3-FASA";
+        if (/PLN_NEUTRAL|MCBN_|PLC_L2N|K[12]_A2|LP_.*_N/.test(pair)) return "JALUR NETRAL AC (N) & JUMPER LAMPU";
+        if (/PLN_L1|MCB_IN|PSU_AC_L|PLC_L1/.test(pair)) return "CATU DAYA FASA AC (220V)";
+        if (/PSU_-V|PB[012]_T2/.test(pair)) return "JALUR MINUS (-V) PSU & JUMPER PUSH BUTTON";
+        if (/PSU_\+V|PLC_IN_|PB[012]_T1/.test(pair)) return "COM INPUT (+V) & INPUT DC 24V PLC";
+        if (/PLC_OUT_COM/.test(pair)) return "COMMON OUTPUT RELAY PLC";
+        if (/TOR[12]_9[56]|K[12]_A1/.test(pair)) return "KONTROL KOIL KONTAKTOR & OVERLOAD";
+        if (/LP_/.test(pair)) return "INDIKATOR PILOT LAMP";
+        return "SAMBUNGAN KONTROL";
       }
 
       function installTerminalTooltips() {
@@ -2920,6 +3230,8 @@ END`,
       let isPanning = false;
       let lastPanX = 0;
       let lastPanY = 0;
+      const activePointers = new Map();
+      let pinchState = null;
 
       function toggleMoreMenu(e) {
         if (e) {
@@ -3181,24 +3493,43 @@ END`,
         }
       }
 
-      // Membuat seluruh sambungan preset secara otomatis. Sambungan lama diganti agar tidak terjadi kabel ganda.
-      function autoWirePreset() {
-        const select = document.getElementById("program-select");
-        const preset = select ? select.value : "FWD_REV_MOTOR";
-        loadPresetProgram();
+      // Status pengkabelan otomatis bertahap (Step-by-Step)
+      let stepWireState = {
+        active: false,
+        preset: "",
+        steps: [],
+        currentIndex: 0,
+        isPlaying: false,
+        timer: null,
+      };
+
+      function buildPresetConnections(preset) {
+        const isVisibleTerm = (id) => {
+          const el = document.querySelector(`[data-id="${id}"]`);
+          return !!(el && !el.closest(".palette-hidden"));
+        };
+        const chainVisible = (ids) => {
+          const vis = ids.filter(isVisibleTerm);
+          const pairs = [];
+          for (let i = 0; i < vis.length - 1; i++) {
+            pairs.push([vis[i], vis[i + 1]]);
+          }
+          return pairs;
+        };
 
         const common = [
-          // Fasa kontrol melewati MCB 1P; netral melewati MCB khusus netral.
-          ["PLN_L1", "MCB_IN"], ["MCB_OUT", "PSU_AC_L"], ["MCB_OUT", "PLC_L1"],
-          ["PLN_NEUTRAL", "MCBN_IN"], ["MCBN_OUT", "PSU_AC_N"],
-          // PSU_AC_N menjadi titik jumper netral untuk PLC, koil, dan lampu.
-          ["PSU_AC_N", "PLC_L2N"],
-          ["PLC_IN_COM", "PSU_-V"],
-          ["PSU_+V", "PB0_T1"], ["PB0_T2", "PLC_IN_00"],
-          ["PSU_+V", "PB1_T1"], ["PB1_T2", "PLC_IN_01"],
-          ["PSU_+V", "PB2_T1"], ["PB2_T2", "PLC_IN_02"],
-          ["MCB_OUT", "PLC_OUT_COM0"], ["MCB_OUT", "PLC_OUT_COM1"],
-          ["MCB_OUT", "PLC_OUT_COM2"], ["MCB_OUT", "PLC_OUT_COM3"]
+          // Fasa kontrol: PLN_L1 -> MCB_IN, lalu MCB_OUT -> PSU_AC_L -> PLC_L1 (dijumper agar MCB_OUT tidak menumpuk >2 kabel)
+          ["PLN_L1", "MCB_IN"],
+          ...chainVisible(["MCB_OUT", "PSU_AC_L", "PLC_L1"]),
+          // Netral sumber: PLN_NEUTRAL -> MCBN_IN, lalu MCBN_OUT -> PSU_AC_N -> PLC_L2N
+          ["PLN_NEUTRAL", "MCBN_IN"],
+          ...chainVisible(["MCBN_OUT", "PSU_AC_N", "PLC_L2N"]),
+          // COM Input mendapat +V dari PSU; minus (-V) PSU masuk ke Push Button dan dijumper berantai
+          ["PSU_+V", "PLC_IN_COM"],
+          ...chainVisible(["PSU_-V", "PB0_T2", "PB1_T2", "PB2_T2"]),
+          ["PB0_T1", "PLC_IN_00"], ["PB1_T1", "PLC_IN_01"], ["PB2_T1", "PLC_IN_02"],
+          // COM Output PLC dijumper berantai dari COM0 -> COM1 -> COM2 -> COM3
+          ...chainVisible(["MCB_OUT", "PLC_OUT_COM0", "PLC_OUT_COM1", "PLC_OUT_COM2", "PLC_OUT_COM3"])
         ];
 
         const motorForward = [
@@ -3208,7 +3539,8 @@ END`,
           ["TOR1_U", "M1_U"], ["TOR1_V", "M1_V"], ["TOR1_W", "M1_W"]
         ];
         const motorReverse = [
-          ["MCB3_OUT_L1", "K2_L1"], ["MCB3_OUT_L2", "K2_L2"], ["MCB3_OUT_L3", "K2_L3"],
+          // Fasa daya K2 dijumper dari terminal input K1 (L1/L2/L3) agar MCB 3-Phase tidak menumpuk kabel
+          ["K1_L1", "K2_L1"], ["K1_L2", "K2_L2"], ["K1_L3", "K2_L3"],
           ["K2_T1", "TOR2_T3"], ["K2_T2", "TOR2_T2"], ["K2_T3", "TOR2_T1"],
           ["TOR2_U", "M2_U"], ["TOR2_V", "M2_V"], ["TOR2_W", "M2_W"]
         ];
@@ -3216,45 +3548,275 @@ END`,
         let connections = [...common];
         if (preset.startsWith("FWD_REV")) {
           connections.push(
-            ["PLC_OUT_02", "TOR1_95"], ["TOR1_96", "K1_A1"], ["K1_A2", "PSU_AC_N"],
-            ["PLC_OUT_03", "TOR2_95"], ["TOR2_96", "K2_A1"], ["K2_A2", "PSU_AC_N"],
+            ["PLC_OUT_02", "TOR1_95"], ["TOR1_96", "K1_A1"],
+            ["PLC_OUT_03", "TOR2_95"], ["TOR2_96", "K2_A1"],
             ["PLC_OUT_04", "LP_SBY_L"], ["PLC_OUT_05", "LP_FWD_L"], ["PLC_OUT_06", "LP_REV_L"],
-            ["LP_SBY_N", "PSU_AC_N"], ["LP_FWD_N", "PSU_AC_N"], ["LP_REV_N", "PSU_AC_N"]
+            // Jumper netral berantai untuk Koil Kontaktor (A2) dan Pilot Lamp (N) agar tidak ada terminal >2 kabel
+            ...chainVisible(["MCBN_OUT", "K1_A2", "K2_A2", "LP_SBY_N", "LP_FWD_N", "LP_REV_N"])
           );
           if (preset.endsWith("_MOTOR")) connections.push(...motorForward, ...motorReverse);
         } else if (preset.startsWith("DOL")) {
           connections.push(
-            ["PLC_OUT_01", "TOR1_95"], ["TOR1_96", "K1_A1"], ["K1_A2", "PSU_AC_N"],
+            ["PLC_OUT_01", "TOR1_95"], ["TOR1_96", "K1_A1"],
             ["PLC_OUT_00", "LP_SBY_L"], ["PLC_OUT_01", "LP_FWD_L"],
-            ["LP_SBY_N", "PSU_AC_N"], ["LP_FWD_N", "PSU_AC_N"], ["LP_REV_N", "PSU_AC_N"]
+            ...chainVisible(["MCBN_OUT", "K1_A2", "LP_SBY_N", "LP_FWD_N", "LP_REV_N"])
           );
           if (preset.endsWith("_MOTOR")) connections.push(...motorForward);
         } else if (preset.startsWith("JOGGING")) {
           connections.push(
-            ["PLC_OUT_01", "TOR1_95"], ["TOR1_96", "K1_A1"], ["K1_A2", "PSU_AC_N"],
-            ["PLC_OUT_02", "TOR2_95"], ["TOR2_96", "K2_A1"], ["K2_A2", "PSU_AC_N"],
-            ["PLC_OUT_00", "LP_SBY_L"], ["LP_SBY_N", "PSU_AC_N"],
-            ["LP_FWD_N", "PSU_AC_N"], ["LP_REV_N", "PSU_AC_N"]
+            ["PLC_OUT_01", "TOR1_95"], ["TOR1_96", "K1_A1"],
+            ["PLC_OUT_02", "TOR2_95"], ["TOR2_96", "K2_A1"],
+            ["PLC_OUT_00", "LP_SBY_L"],
+            ...chainVisible(["MCBN_OUT", "K1_A2", "K2_A2", "LP_SBY_N", "LP_FWD_N", "LP_REV_N"])
           );
           if (preset.endsWith("_MOTOR")) connections.push(...motorForward);
         }
 
-        // Kosongkan jalur sebelumnya sebelum membuat set kabel baru.
-        [...wires].forEach(w => deleteWireById(w.id));
-        selectedTerminal = null;
-        let added = 0;
+        const validSteps = [];
+        const seen = new Set();
         connections.forEach(([fromId, toId]) => {
           const a = document.querySelector(`[data-id="${fromId}"]`);
           const b = document.querySelector(`[data-id="${toId}"]`);
           if (!a || !b || a.closest(".palette-hidden") || b.closest(".palette-hidden")) return;
-          const before = wires.length;
-          addWire(a, b, getPresetWireColor(fromId, toId));
-          if (wires.length > before) added++;
+          const key = [fromId, toId].sort().join("|");
+          if (seen.has(key)) return;
+          seen.add(key);
+          validSteps.push({
+            from: fromId,
+            to: toId,
+            color: getPresetWireColor(fromId, toId),
+            category: describeWireCategory(fromId, toId),
+            desc: `${describeTerminal(fromId)}  ➔  ${describeTerminal(toId)}`,
+          });
         });
-        autoTidyWires();
+        return validSteps;
+      }
+
+      function clearStepHighlights() {
+        document.querySelectorAll(".terminal.step-highlight").forEach(el => el.classList.remove("step-highlight"));
+        document.querySelectorAll(".wire-group.wire-step-latest").forEach(el => el.classList.remove("wire-step-latest"));
+      }
+
+      function highlightStepTerminals(fromId, toId, highlightLatestWire = false) {
+        clearStepHighlights();
+        if (fromId) document.querySelector(`[data-id="${fromId}"]`)?.classList.add("step-highlight");
+        if (toId) document.querySelector(`[data-id="${toId}"]`)?.classList.add("step-highlight");
+        if (highlightLatestWire && fromId && toId) {
+          const w = wires.find(item => (item.from === fromId && item.to === toId) || (item.from === toId && item.to === fromId));
+          if (w && w.groupEl) w.groupEl.classList.add("wire-step-latest");
+        }
+      }
+
+      function stopAutoPlayStepWire() {
+        if (stepWireState.timer) {
+          clearInterval(stepWireState.timer);
+          stepWireState.timer = null;
+        }
+        stepWireState.isPlaying = false;
+        const playBtn = document.getElementById("swp-btn-play");
+        if (playBtn) {
+          playBtn.classList.remove("playing");
+          playBtn.textContent = "⏯ Auto-Play";
+        }
+      }
+
+      function updateStepWireUI() {
+        const total = stepWireState.steps.length;
+        const idx = stepWireState.currentIndex;
+        const pct = total > 0 ? Math.round((idx / total) * 100) : 0;
+
+        const counterEl = document.getElementById("swp-counter");
+        const barEl = document.getElementById("swp-progress-bar");
+        const catTextEl = document.getElementById("swp-cat-text");
+        const dotEl = document.getElementById("swp-color-dot");
+        const descEl = document.getElementById("swp-step-desc");
+        const nextEl = document.getElementById("swp-step-next");
+
+        if (counterEl) counterEl.textContent = `Langkah ${idx} / ${total}`;
+        if (barEl) barEl.style.width = `${pct}%`;
+
+        const prevBtn = document.getElementById("swp-btn-prev");
+        const resetBtn = document.getElementById("swp-btn-reset");
+        const nextBtn = document.getElementById("swp-btn-next");
+        const allBtn = document.getElementById("swp-btn-all");
+
+        if (prevBtn) prevBtn.disabled = idx <= 0;
+        if (resetBtn) resetBtn.disabled = idx <= 0;
+        if (nextBtn) nextBtn.disabled = idx >= total;
+        if (allBtn) allBtn.disabled = idx >= total;
+
+        if (idx === 0 && total > 0) {
+          const first = stepWireState.steps[0];
+          if (dotEl) dotEl.style.background = first.color;
+          if (catTextEl) catTextEl.textContent = `SIAP MULAI • ${first.category}`;
+          if (descEl) descEl.textContent = `Langkah 1: ${first.desc}`;
+          if (nextEl) nextEl.textContent = "Klik '▶ Langkah Berikutnya' untuk memasang kabel pertama, atau '⏯ Auto-Play'.";
+          highlightStepTerminals(first.from, first.to, false);
+        } else if (idx > 0 && idx <= total) {
+          const current = stepWireState.steps[idx - 1];
+          if (dotEl) dotEl.style.background = current.color;
+          if (catTextEl) catTextEl.textContent = `${ idx === total ? "✔ SELESAI • " : "" }${current.category}`;
+          if (descEl) descEl.textContent = `[Terpasang #${idx}] ${current.desc}`;
+          if (idx < total) {
+            const next = stepWireState.steps[idx];
+            if (nextEl) nextEl.textContent = `Berikutnya (#${idx + 1}): ${next.desc}`;
+          } else {
+            if (nextEl) nextEl.textContent = `🎉 Seluruh ${total} kabel untuk preset ${stepWireState.preset.replaceAll("_", " ")} telah terpasang!`;
+          }
+          highlightStepTerminals(current.from, current.to, true);
+        }
+      }
+
+      // Memulai pengkabelan otomatis secara bertahap (satu per satu / step-by-step).
+      function autoWirePreset() {
+        stopAutoPlayStepWire();
+        const select = document.getElementById("program-select");
+        const preset = select ? select.value : "FWD_REV_MOTOR";
+        loadPresetProgram();
+
+        const steps = buildPresetConnections(preset);
+        if (!steps.length) {
+          showToast("Tidak ada daftar sambungan untuk preset ini.");
+          return;
+        }
+
+        pushUndoState();
+        suppressUndoHistory = true;
+        [...wires].forEach(w => deleteWireById(w.id));
+        suppressUndoHistory = false;
+        selectedTerminal = null;
+
+        stepWireState.active = true;
+        stepWireState.preset = preset;
+        stepWireState.steps = steps;
+        stepWireState.currentIndex = 0;
+
+        const panel = document.getElementById("step-wire-panel");
+        if (panel) panel.classList.add("show");
+
+        // Pasang langkah pertama secara langsung saat tombol diklik agar langsung terlihat langkah 1
+        nextStepWire();
+      }
+
+      function nextStepWire() {
+        if (!stepWireState.active) return;
+        const total = stepWireState.steps.length;
+        if (stepWireState.currentIndex >= total) {
+          stopAutoPlayStepWire();
+          return;
+        }
+        const step = stepWireState.steps[stepWireState.currentIndex];
+        const a = document.querySelector(`[data-id="${step.from}"]`);
+        const b = document.querySelector(`[data-id="${step.to}"]`);
+        if (a && b && !a.closest(".palette-hidden") && !b.closest(".palette-hidden")) {
+          addWire(a, b, step.color);
+        }
+        stepWireState.currentIndex++;
+        autoTidyWires(true);
         evaluateCircuit();
         scheduleLocalAutosave();
-        alert(`Pengabelan otomatis selesai untuk preset ${preset.replaceAll("_", " ")}. ${added} sambungan dibuat. Periksa kembali setiap jalur sebelum menjalankan simulasi.`);
+        updateStepWireUI();
+
+        if (stepWireState.currentIndex >= total) {
+          stopAutoPlayStepWire();
+          showToast(`Pengkabelan selesai (${total}/${total} kabel terpasang).`);
+        }
+      }
+
+      function prevStepWire() {
+        if (!stepWireState.active || stepWireState.currentIndex <= 0) return;
+        stopAutoPlayStepWire();
+        stepWireState.currentIndex--;
+        const step = stepWireState.steps[stepWireState.currentIndex];
+        const targetWire = wires.find(
+          w => (w.from === step.from && w.to === step.to) || (w.from === step.to && w.to === step.from)
+        );
+        if (targetWire) {
+          deleteWireById(targetWire.id);
+        }
+        if (wires.length > 0) autoTidyWires(true);
+        evaluateCircuit();
+        scheduleLocalAutosave();
+        updateStepWireUI();
+      }
+
+      function resetStepWire() {
+        if (!stepWireState.active) return;
+        stopAutoPlayStepWire();
+        pushUndoState();
+        suppressUndoHistory = true;
+        [...wires].forEach(w => deleteWireById(w.id));
+        suppressUndoHistory = false;
+        stepWireState.currentIndex = 0;
+        evaluateCircuit();
+        scheduleLocalAutosave();
+        updateStepWireUI();
+        showToast("Pengkabelan di-reset ke Langkah 0. Klik 'Langkah Berikutnya' untuk mulai.");
+      }
+
+      function finishAllStepWires() {
+        if (!stepWireState.active) return;
+        stopAutoPlayStepWire();
+        const total = stepWireState.steps.length;
+        if (stepWireState.currentIndex >= total) return;
+        pushUndoState();
+        suppressUndoHistory = true;
+        while (stepWireState.currentIndex < total) {
+          const step = stepWireState.steps[stepWireState.currentIndex];
+          const a = document.querySelector(`[data-id="${step.from}"]`);
+          const b = document.querySelector(`[data-id="${step.to}"]`);
+          if (a && b && !a.closest(".palette-hidden") && !b.closest(".palette-hidden")) {
+            addWire(a, b, step.color);
+          }
+          stepWireState.currentIndex++;
+        }
+        suppressUndoHistory = false;
+        autoTidyWires(true);
+        evaluateCircuit();
+        scheduleLocalAutosave();
+        updateStepWireUI();
+        showToast(`Seluruh ${total} sambungan preset berhasil dipasang.`);
+      }
+
+      function toggleAutoPlayStepWire() {
+        if (!stepWireState.active) return;
+        if (stepWireState.isPlaying) {
+          stopAutoPlayStepWire();
+          return;
+        }
+        if (stepWireState.currentIndex >= stepWireState.steps.length) {
+          resetStepWire();
+        }
+        stepWireState.isPlaying = true;
+        const playBtn = document.getElementById("swp-btn-play");
+        if (playBtn) {
+          playBtn.classList.add("playing");
+          playBtn.textContent = "⏸ Jeda";
+        }
+        const speed = Number(document.getElementById("swp-speed")?.value || 850);
+        nextStepWire();
+        if (stepWireState.currentIndex < stepWireState.steps.length) {
+          stepWireState.timer = setInterval(() => {
+            nextStepWire();
+          }, speed);
+        }
+      }
+
+      function updateAutoPlaySpeed() {
+        if (!stepWireState.isPlaying) return;
+        if (stepWireState.timer) clearInterval(stepWireState.timer);
+        const speed = Number(document.getElementById("swp-speed")?.value || 850);
+        stepWireState.timer = setInterval(() => {
+          nextStepWire();
+        }, speed);
+      }
+
+      function closeStepWirePanel() {
+        stopAutoPlayStepWire();
+        clearStepHighlights();
+        stepWireState.active = false;
+        const panel = document.getElementById("step-wire-panel");
+        if (panel) panel.classList.remove("show");
       }
 
       function openProgramEditor() {
@@ -3323,18 +3885,52 @@ END`,
         const vH = viewport.clientHeight;
         const baseW = 1420;
         const baseH = 880;
-        scale = Math.min(vW / baseW, vH / baseH) * 0.92;
+        const portraitSmall = window.matchMedia("(max-width: 760px) and (orientation: portrait)").matches;
+        // Portrait: fit the workbench width first; user can pinch/scroll to inspect details.
+        scale = (portraitSmall ? vW / baseW : Math.min(vW / baseW, vH / baseH)) * (portraitSmall ? 0.96 : 0.92);
+        scale = Math.min(2.8, Math.max(0.2, scale));
         panX = (vW - baseW * scale) / 2;
-        panY = (vH - baseH * scale) / 2;
+        panY = portraitSmall ? 10 : (vH - baseH * scale) / 2;
         applyTransform(true);
       }
 
-      window.addEventListener("resize", resetZoomPan);
+      let resizeTimer = null;
+      window.addEventListener("resize", () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+          // Refit on orientation/viewport changes so portrait and landscape both use the available area.
+          resetZoomPan();
+        }, 100);
+      });
 
-      /* PAN & ZOOM VIEWPORT: geser dari latar atau permukaan komponen.
-         Terminal dan kontrol interaktif dikecualikan agar wiring/tombol tetap berfungsi. */
+      /* v40: mouse-wheel zoom, pinch zoom, dan pan multi-perangkat. */
+      function pointerDistance(a, b) {
+        const dx = a.x - b.x, dy = a.y - b.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+      function pointerMidpoint(a, b) {
+        return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+      }
+      viewport.addEventListener("wheel", (e) => {
+        // Wheel scroll / trackpad zooms around the pointer location.
+        e.preventDefault();
+        const rect = viewport.getBoundingClientRect();
+        const factor = Math.exp(-e.deltaY * (e.ctrlKey ? 0.004 : 0.0018));
+        zoomAtPoint(e.clientX - rect.left, e.clientY - rect.top, factor);
+      }, { passive:false });
+
       viewport.addEventListener("pointerdown", (e) => {
         if (e.button !== 0 && e.pointerType === "mouse") return;
+        activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+        if (activePointers.size >= 2) {
+          const pts = [...activePointers.values()].slice(0,2);
+          pinchState = { distance:pointerDistance(pts[0],pts[1]), scale, midpoint:pointerMidpoint(pts[0],pts[1]), panX, panY };
+          isPanning = false;
+          viewport.classList.remove("panning");
+          try { viewport.setPointerCapture(e.pointerId); } catch (_) {}
+          e.preventDefault();
+          return;
+        }
         const target = e.target;
         const interactive = target.closest && target.closest(
           '.terminal, .push-btn, .pilot-lamp, .mcb-switch, .tor-trip-btn, button, input, select, textarea, a, .wire-point, .wire-hit-area'
@@ -3350,6 +3946,24 @@ END`,
         e.preventDefault();
       });
       window.addEventListener("pointermove", (e) => {
+        if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, {x:e.clientX, y:e.clientY});
+        if (pinchState && activePointers.size >= 2) {
+          const pts = [...activePointers.values()].slice(0,2);
+          const dist = pointerDistance(pts[0],pts[1]);
+          const mid = pointerMidpoint(pts[0],pts[1]);
+          const nextScale = Math.min(2.8, Math.max(0.2, pinchState.scale * (dist / Math.max(1,pinchState.distance))));
+          // Keep the content under the pinch midpoint anchored while zooming.
+          const localMidX = mid.x - viewport.getBoundingClientRect().left;
+          const localMidY = mid.y - viewport.getBoundingClientRect().top;
+          const oldMidX = pinchState.midpoint.x - viewport.getBoundingClientRect().left;
+          const oldMidY = pinchState.midpoint.y - viewport.getBoundingClientRect().top;
+          panX = localMidX - (oldMidX - pinchState.panX) * (nextScale / pinchState.scale);
+          panY = localMidY - (oldMidY - pinchState.panY) * (nextScale / pinchState.scale);
+          scale = nextScale;
+          applyTransform(false);
+          e.preventDefault();
+          return;
+        }
         if (isPanning) {
           panX += e.clientX - lastPanX;
           panY += e.clientY - lastPanY;
@@ -3357,8 +3971,10 @@ END`,
           lastPanY = e.clientY;
           applyTransform(false);
         }
-      });
-      function stopPanning() {
+      }, { passive:false });
+      function stopPanning(e) {
+        if (e && activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
+        if (activePointers.size < 2) pinchState = null;
         if (isPanning) {
           isPanning = false;
           viewport.classList.remove("panning");
@@ -3367,6 +3983,27 @@ END`,
       }
       window.addEventListener("pointerup", stopPanning);
       window.addEventListener("pointercancel", stopPanning);
+
+      function installComponentDragging() {
+        document.querySelectorAll(".component, #busbar-pln").forEach(el => {
+          const handle = el.matches("#busbar-pln") ? el : el.querySelector(".comp-header");
+          if (!handle) return;
+          handle.addEventListener("pointerdown", e => {
+            if (e.button !== 0 || e.target.closest("button, input, select, textarea, .terminal")) return;
+            const rect = el.getBoundingClientRect(), stageRect = stage.getBoundingClientRect();
+            draggingComponent = { el, pointerId:e.pointerId, offsetX:(e.clientX-rect.left)/scale, offsetY:(e.clientY-rect.top)/scale };
+            el.classList.add("is-dragging"); handle.setPointerCapture?.(e.pointerId); e.preventDefault(); e.stopPropagation();
+          });
+        });
+        window.addEventListener("pointermove", e => {
+          if (!draggingComponent || e.pointerId !== draggingComponent.pointerId) return;
+          const box = viewport.getBoundingClientRect();
+          const x = Math.max(0, Math.round((e.clientX-box.left-panX)/scale-draggingComponent.offsetX));
+          const y = Math.max(0, Math.round((e.clientY-box.top-panY)/scale-draggingComponent.offsetY));
+          draggingComponent.el.style.left=x+"px"; draggingComponent.el.style.top=y+"px"; renderAllWires();
+        }, {passive:false});
+        window.addEventListener("pointerup", e => { if (draggingComponent && e.pointerId === draggingComponent.pointerId) { draggingComponent.el.classList.remove("is-dragging"); draggingComponent=null; scheduleLocalAutosave(); } });
+      }
 
       function setColor(hex, el) {
         activeColor = hex;
@@ -3385,6 +4022,28 @@ END`,
         evaluateCircuit();
       }
 
+      let waypointHandlesVisible = false;
+      function toggleWaypointVisibility() {
+        waypointHandlesVisible = !waypointHandlesVisible;
+        document.body.classList.toggle("hide-waypoint-handles", !waypointHandlesVisible);
+        const btn = document.getElementById("btn-waypoint-visibility");
+        if (btn) {
+          btn.textContent = waypointHandlesVisible ? "◉ Titik: ON" : "◉ Titik: OFF";
+          btn.classList.toggle("active", waypointHandlesVisible);
+          btn.title = waypointHandlesVisible
+            ? "Titik belok tampil — tekan untuk menyembunyikan"
+            : "Titik belok tersembunyi — tekan untuk menampilkan dan mengedit";
+        }
+      }
+
+      function updateWiredTerminalMarkers() {
+        const connected = new Set();
+        wires.forEach(w => { connected.add(w.from); connected.add(w.to); });
+        document.querySelectorAll(".terminal[data-id]").forEach(term => {
+          term.classList.toggle("has-wire", connected.has(term.dataset.id));
+        });
+      }
+
       function toggleAddPointMode() {
         isAddPointMode = !isAddPointMode;
         if (isAddPointMode && isDeleteMode) toggleDeleteMode();
@@ -3400,11 +4059,12 @@ END`,
       }
 
       // Warna standar untuk pengabelan otomatis: netral/0V biru, fasa/positif merah,
-      // dan seluruh jalur daya motor (kontaktor, TOR, serta terminal motor) putih.
+      // dan seluruh jalur daya motor (kontaktor, TOR, serta terminal motor) hitam.
       function getPresetWireColor(fromId, toId) {
         const ids = [fromId, toId];
         const joined = ids.join("|");
-        if (ids.some(id => /NEUTRAL|AC_N|PLC_L2N|PSU_-V/.test(id))) return "#2980b9";
+        // Jalur netral AC, minus PSU (-V), jumper minus Push Button (PBx_T2), dan jumper netral Lampu (LP_*_N) berwarna biru
+        if (ids.some(id => /NEUTRAL|MCBN_|AC_N|PLC_L2N|PSU_-V|PB[012]_T2|LP_.*_N|K[12]_A2/.test(id))) return "#2980b9";
         const motorPower = ids.some(id => /^(K[12]_(L[123]|T[123])|TOR[12]_(T[123]|U|V|W)|M[12]_[UVW])$/.test(id));
         if (motorPower) return "#111827";
         if (ids.some(id => /PLN_L[123]|PSU_AC_L|PSU_\+V|MCB_(IN|OUT)/.test(id))) return "#e74c3c";
@@ -3421,65 +4081,115 @@ END`,
       function segmentConflict(a, b) {
         const [a1, a2] = a, [b1, b2] = b;
         const ah = Math.abs(a1.y - a2.y) < 1, bh = Math.abs(b1.y - b2.y) < 1;
+        const intervalOverlap = (a0,a1,b0,b1) => Math.max(0, Math.min(Math.max(a0,a1),Math.max(b0,b1)) - Math.max(Math.min(a0,a1),Math.min(b0,b1)));
         if (ah && bh) {
-          if (Math.abs(a1.y - b1.y) > 2) return 0;
-          const overlap = Math.min(Math.max(a1.x,a2.x),Math.max(b1.x,b2.x)) - Math.max(Math.min(a1.x,a2.x),Math.min(b1.x,b2.x));
-          return overlap > 4 ? 12000 + overlap : 0;
+          const overlap = intervalOverlap(a1.x,a2.x,b1.x,b2.x);
+          const gap = Math.abs(a1.y-b1.y);
+          if (overlap > 2 && gap < 3) return 18000 + overlap * 3;
+          if (overlap > 8 && gap < 18) return (18-gap) * overlap * 2.4;
+          return 0;
         }
         if (!ah && !bh) {
-          if (Math.abs(a1.x - b1.x) > 2) return 0;
-          const overlap = Math.min(Math.max(a1.y,a2.y),Math.max(b1.y,b2.y)) - Math.max(Math.min(a1.y,a2.y),Math.min(b1.y,b2.y));
-          return overlap > 4 ? 12000 + overlap : 0;
+          const overlap = intervalOverlap(a1.y,a2.y,b1.y,b2.y);
+          const gap = Math.abs(a1.x-b1.x);
+          if (overlap > 2 && gap < 3) return 18000 + overlap * 3;
+          if (overlap > 8 && gap < 18) return (18-gap) * overlap * 2.4;
+          return 0;
         }
         const h = ah ? a : b, v = ah ? b : a;
         const x = v[0].x, y = h[0].y;
-        const withinH = x >= Math.min(h[0].x,h[1].x) + 3 && x <= Math.max(h[0].x,h[1].x) - 3;
-        const withinV = y >= Math.min(v[0].y,v[1].y) + 3 && y <= Math.max(v[0].y,v[1].y) - 3;
-        return withinH && withinV ? 900 : 0;
+        const crosses = x >= Math.min(h[0].x,h[1].x) + 2 && x <= Math.max(h[0].x,h[1].x) - 2 &&
+                        y >= Math.min(v[0].y,v[1].y) + 2 && y <= Math.max(v[0].y,v[1].y) - 2;
+        return crosses ? 1500 : 0;
       }
 
-      /* RAPIKAN KABEL: jalur siku-siku dengan pemilihan koridor untuk mengurangi tumpang tindih. */
-      function autoTidyWires() {
+      /* RAPIKAN V42: pilih koridor dengan jarak antarjalur, stubs terminal, dan penalti persilangan. */
+      function autoTidyWires(silent = false) {
+        if (!wires.length) { if (!silent) showToast("Belum ada kabel untuk dirapikan."); return; }
+        if (!silent) pushUndoState();
         const routedSegments = [];
         const ordered = [...wires].sort((a,b) => {
           const score = w => {
             const ids = `${w.from}|${w.to}`;
-            return /PLN_|PSU_|MCB_/.test(ids) ? 0 : /M[12]_|TOR[12]_|K[12]_/.test(ids) ? 1 : 2;
+            if (/PLN_|PSU_|MCB_/.test(ids)) return 0;
+            if (/K[12]_(L[123]|T[123])|TOR[12]_(T[123]|U|V|W)|M[12]_[UVW]/.test(ids)) return 1;
+            if (/K[12]_|TOR[12]_|PLC_OUT/.test(ids)) return 2;
+            return 3;
           };
           return score(a)-score(b);
         });
-        ordered.forEach((w) => {
+        const compact = pts => {
+          const out=[];
+          pts.forEach(p=>{
+            const q={x:Math.round(p.x),y:Math.round(p.y)};
+            if (out.length && out[out.length-1].x===q.x && out[out.length-1].y===q.y) return;
+            while(out.length>=2){
+              const p0=out[out.length-2],p1=out[out.length-1];
+              if ((p0.x===p1.x && p1.x===q.x)||(p0.y===p1.y && p1.y===q.y)) out.pop(); else break;
+            }
+            out.push(q);
+          });
+          return out;
+        };
+        ordered.forEach((w, wi) => {
           const elA = document.querySelector(`[data-id="${w.from}"]`);
           const elB = document.querySelector(`[data-id="${w.to}"]`);
           if (!elA || !elB) return;
-          const pA = getTerminalCenter(elA), pB = getTerminalCenter(elB);
-          const a = {x:Math.round(pA.x), y:Math.round(pA.y)}, b = {x:Math.round(pB.x), y:Math.round(pB.y)};
-          const candidates = [];
-          const offsets = [0, 22, -22, 44, -44, 66, -66, 88, -88, 112, -112, 140, -140, 170, -170, 205, -205];
-          // Dua keluarga jalur ortogonal; pilih koridor yang paling sedikit bersinggungan dengan kabel terdahulu.
-          offsets.forEach(off => {
-            const mx = Math.round((a.x+b.x)/2 + off);
-            const xPts = [a, {x:mx,y:a.y}, {x:mx,y:b.y}, b];
-            const my = Math.round((a.y+b.y)/2 + off);
-            const yPts = [a, {x:a.x,y:my}, {x:b.x,y:my}, b];
-            candidates.push({pts:xPts, cost:Math.abs(off)*0.15 + (Math.abs(a.x-b.x)<45 ? 80:0)});
-            candidates.push({pts:yPts, cost:Math.abs(off)*0.15 + (Math.abs(a.y-b.y)<45 ? 80:0)});
-          });
-          let best = null, bestCost = Infinity;
-          for (const c of candidates) {
-            const segs = routeSegments(c.pts);
-            let cost = c.cost;
-            for (const seg of segs) for (const prev of routedSegments) cost += segmentConflict(seg, prev) * 1;
-            // Sedikit preferensi untuk jalur pendek, tetapi hindari berbagi koridor.
-            cost += c.pts.slice(1).reduce((sum,pt,i)=>sum+Math.abs(pt.x-c.pts[i].x)+Math.abs(pt.y-c.pts[i].y),0)*0.015;
-            if (cost < bestCost) { bestCost = cost; best = c; }
+          const pA=getTerminalCenter(elA), pB=getTerminalCenter(elB);
+          const a={x:Math.round(pA.x),y:Math.round(pA.y)}, b={x:Math.round(pB.x),y:Math.round(pB.y)};
+          const dx=b.x-a.x, dy=b.y-a.y;
+          const sx=dx>=0?1:-1, sy=dy>=0?1:-1;
+          const stub= Math.min(20, Math.max(9, Math.round(Math.min(Math.abs(dx),Math.abs(dy),24)*.55)));
+          const ax={x:a.x+(Math.abs(dx)>28?sx*stub:0),y:a.y};
+          const bx={x:b.x-(Math.abs(dx)>28?sx*stub:0),y:b.y};
+          const ay={x:a.x,y:a.y+(Math.abs(dy)>28?sy*stub:0)};
+          const by={x:b.x,y:b.y-(Math.abs(dy)>28?sy*stub:0)};
+          const candidates=[];
+          const isPlcComJumper = /^PLC_OUT_COM\d$/.test(w.from) && /^PLC_OUT_COM\d$/.test(w.to);
+          // Jumper COM Output PLC (COM0->COM1->COM2->COM3) ditarik lurus sejajar seperti pada gambar referensi.
+          if (isPlcComJumper) {
+            candidates.push({ pts: compact([a, b]), base: 0 });
+          } else if (Math.abs(dy) < 10) {
+            // Jumper sebaris horizontal (seperti antar Push Button PB0_T2->PB1_T2->PB2_T2 atau antar Pilot Lamp LP_SBY_N->LP_FWD_N->LP_REV_N)
+            // dibuat melengkung siku di bawah deretan terminal agar tidak menabrak terminal sebelahnya.
+            [24, 34, -24].forEach((drop, di) => {
+              const yLoop = Math.round(Math.max(a.y, b.y) + drop);
+              candidates.push({
+                pts: compact([a, { x: a.x, y: yLoop }, { x: b.x, y: yLoop }, b]),
+                base: di * 8,
+              });
+            });
           }
-          w.points = best.pts.slice(1,-1).map(pt=>({x:pt.x,y:pt.y}));
-          w.autoRouted = true;
+          const laneOffsets=[0,18,-18,36,-36,54,-54,72,-72,92,-92,116,-116,144,-144,176,-176,210,-210,250,-250];
+          laneOffsets.forEach(off=>{
+            const yLane=Math.round((a.y+b.y)/2+off);
+            const sameRowPenalty = (Math.abs(dy) < 10 && Math.abs(off) < 16) ? 2500 : 0;
+            candidates.push({pts:compact([a,ax,{x:ax.x,y:yLane},{x:bx.x,y:yLane},bx,b]),base:Math.abs(off)*.32+(Math.abs(dx)<55?100:0)+sameRowPenalty});
+            const xLane=Math.round((a.x+b.x)/2+off);
+            candidates.push({pts:compact([a,ay,{x:xLane,y:ay.y},{x:xLane,y:by.y},by,b]),base:Math.abs(off)*.32+(Math.abs(dy)<55?100:0)+sameRowPenalty});
+          });
+          // Favor routes that stay in the same general component corridor and keep a visible gap from previous wires.
+          let best=null,bestCost=Infinity;
+          for(const c of candidates){
+            const segs=routeSegments(c.pts); let cost=c.base;
+            for(const seg of segs) for(const prev of routedSegments) cost += segmentConflict(seg,prev);
+            const length=c.pts.slice(1).reduce((sum,pt,i)=>sum+Math.abs(pt.x-c.pts[i].x)+Math.abs(pt.y-c.pts[i].y),0);
+            cost += length*.018;
+            // Small deterministic lane preference prevents identical routes for connections with similar endpoints.
+            cost += ((wi%5)*Math.abs(c.pts[1]?.x-a.x || c.pts[1]?.y-a.y))*.002;
+            if(cost<bestCost){bestCost=cost;best=c;}
+          }
+          if(!best) return;
+          const pts=compact(best.pts);
+          w.points=pts.slice(1,-1).map(pt=>({x:pt.x,y:pt.y}));
+          w.autoRouted=true;
           renderWire(w);
-          routedSegments.push(...routeSegments(best.pts));
+          routedSegments.push(...routeSegments(pts));
         });
+        renderAllWires();
         evaluateCircuit();
+        scheduleLocalAutosave();
+        if (!silent) showToast("Kabel dirapikan: jarak jalur dan persilangan diminimalkan. Gunakan Undo untuk membatalkan.");
       }
 
       function toggleDeleteMode() {
@@ -3694,6 +4404,7 @@ END`,
         wires.push(wireObj);
         renderWire(wireObj);
         installWireEvents(wireObj);
+        updateWiredTerminalMarkers();
         scheduleLocalAutosave();
       }
 
@@ -3727,6 +4438,7 @@ END`,
           wires[idx].groupEl.remove();
           wires.splice(idx, 1);
           if (selectedWireId === wireId) setSelectedWire(null);
+          updateWiredTerminalMarkers();
           evaluateCircuit();
           scheduleLocalAutosave();
         }
@@ -3807,6 +4519,7 @@ END`,
 
       function renderAllWires() {
         wires.forEach(renderWire);
+        updateWiredTerminalMarkers();
       }
 
       const onHandleMove = (e) => {
@@ -3859,10 +4572,12 @@ END`,
       });
 
       function clearAllWires() {
+        closeStepWirePanel();
         pushUndoState();
         wires.forEach((w) => w.groupEl.remove());
         wires = [];
         setSelectedWire(null);
+        updateWiredTerminalMarkers();
         evaluateCircuit();
         scheduleLocalAutosave();
       }
@@ -4312,6 +5027,7 @@ END`,
         resetZoomPan();
         loadPresetProgram();
         installTerminalTooltips();
+        installComponentDragging();
         let restored = false;
         try {
           const raw = localStorage.getItem(LOCAL_WORKSPACE_KEY);
